@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>게임 정보 카드 생성기 / Game Info Card Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+    background: #f5f6f8;
+    color: #1a1c20;
+  }
+  h1 {
+    font-size: 22px;
+    margin: 0 0 6px;
+    letter-spacing: -0.5px;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 24px;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+  @media (max-width: 1100px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+  .panel {
+    background: #fff;
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    border: 1px solid #eceff3;
+  }
+  .panel h2 {
+    font-size: 15px;
+    margin: 0 0 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eceff3;
+    color: #1a1c20;
+  }
+
+  /* 언어 선택기 */
+  .lang-switcher {
+    display: flex;
+    gap: 6px;
+    padding: 4px;
+    background: #f0f2f5;
+    border-radius: 10px;
+    margin-bottom: 18px;
+  }
+  .lang-btn {
+    flex: 1;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #6b7280;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, color 0.15s;
+  }
+  .lang-btn:hover { color: #1a1c20; }
+  .lang-btn.active {
+    background: #1a1c20;
+    color: #fff;
+  }
+
+  .field {
+    margin-bottom: 14px;
+  }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #555;
+    margin-bottom: 6px;
+  }
+  .field input,
+  .field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 13px;
+    border: 1px solid #d8dce2;
+    border-radius: 8px;
+    font-family: inherit;
+    background: #fafbfc;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .field input:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: #4a6cf7;
+    background: #fff;
+  }
+  .field textarea {
+    resize: vertical;
+    min-height: 60px;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .hint {
+    font-size: 11px;
+    color: #999;
+    margin-top: 4px;
+  }
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid #eceff3;
+  }
+  button {
+    flex: 1;
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.05s, background 0.15s;
+  }
+  button:active { transform: translateY(1px); }
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: #1a1c20;
+    color: #fff;
+  }
+  .btn-primary:hover { background: #2d3138; }
+  .btn-secondary {
+    background: #eceff3;
+    color: #1a1c20;
+  }
+  .btn-secondary:hover { background: #dfe3e8; }
+  .btn-reset {
+    background: #fff;
+    color: #6b7280;
+    border: 1px solid #d8dce2;
+  }
+  .btn-reset:hover { background: #fafbfc; }
+  .preview-area {
+    background: #f0f2f5;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+    min-height: 200px;
+  }
+  .code-area {
+    position: relative;
+  }
+  .code-area textarea {
+    width: 100%;
+    height: 220px;
+    padding: 12px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    border: 1px solid #d8dce2;
+    border-radius: 8px;
+    background: #f8f9fb;
+    resize: vertical;
+  }
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #1a1c20;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    z-index: 9999;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<h1 id="pageTitle">게임 정보 카드 생성기</h1>
+<p class="subtitle" id="pageSubtitle">정보를 입력하고 "코드 생성"을 누르면 HTML 코드가 만들어집니다. 우측에서 미리보기와 코드 복사가 가능합니다.</p>
+
+<div class="layout">
+  <!-- 입력 패널 -->
+  <div class="panel">
+    <!-- 언어 선택기 -->
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="ko" onclick="setLang('ko')">🇰🇷 한국어</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')">🇺🇸 English</button>
+    </div>
+
+    <h2 id="formHeader">📝 게임 정보 입력</h2>
+
+    <div class="field">
+      <label id="label-imageUrl">대표 이미지 URL</label>
+      <input type="text" id="imageUrl">
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label id="label-titleMain">한글 게임명</label>
+        <input type="text" id="titleMain">
+      </div>
+      <div class="field">
+        <label id="label-titleSub">영문 게임명</label>
+        <input type="text" id="titleSub">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label id="label-developer">🏢 개발사</label>
+        <input type="text" id="developer">
+      </div>
+      <div class="field">
+        <label id="label-publisher">🏢 퍼블리셔</label>
+        <input type="text" id="publisher">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label id="label-platform">📱 플랫폼</label>
+        <input type="text" id="platform">
+      </div>
+      <div class="field">
+        <label id="label-play">🎮 플레이</label>
+        <input type="text" id="play">
+      </div>
+    </div>
+
+    <div class="field">
+      <label id="label-releaseDate">📅 출시일</label>
+      <textarea id="releaseDate"></textarea>
+      <div class="hint" id="hint-releaseDate">여러 줄 입력 시 줄바꿈으로 구분됩니다.</div>
+    </div>
+
+    <div class="field">
+      <label id="label-keywords">🔧 키워드</label>
+      <input type="text" id="keywords">
+    </div>
+
+    <div class="actions">
+      <button class="btn-reset" id="btn-reset" onclick="resetForm()">초기화</button>
+      <button class="btn-secondary" id="btn-sample" onclick="loadSample()">예시 채우기</button>
+      <button class="btn-primary" id="btn-generate" onclick="generate()">코드 생성</button>
+    </div>
+  </div>
+
+  <!-- 결과 패널 -->
+  <div class="panel">
+    <h2 id="previewHeader">👀 미리보기</h2>
+    <div class="preview-area" id="preview">
+      <p style="color:#999;font-size:13px;text-align:center;margin:60px 0;" id="previewEmpty">좌측에 정보를 입력한 후 "코드 생성"을 눌러주세요.</p>
+    </div>
+
+    <h2 style="margin-top:8px;" id="codeHeader">💾 HTML 코드</h2>
+    <div class="code-area">
+      <textarea id="codeOutput" readonly></textarea>
+    </div>
+
+    <div class="actions">
+      <button class="btn-secondary" id="btn-download" onclick="downloadImage()">🖼️ 이미지 다운로드</button>
+      <button class="btn-primary" id="btn-copy" onclick="copyCode()">📋 코드 복사</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   다국어(i18n) 사전
+   ============================================================ */
+const I18N = {
+  ko: {
+    htmlLang: 'ko',
+    pageTitle: '게임 정보 카드 생성기',
+    pageSubtitle: '정보를 입력하고 "코드 생성"을 누르면 HTML 코드가 만들어집니다. 우측에서 미리보기와 코드 복사가 가능합니다.',
+    formHeader: '📝 게임 정보 입력',
+    previewHeader: '👀 미리보기',
+    codeHeader: '💾 HTML 코드',
+    labels: {
+      imageUrl: '대표 이미지 URL',
+      titleMain: '한글 게임명',
+      titleSub: '영문 게임명',
+      developer: '🏢 개발사',
+      publisher: '🏢 퍼블리셔',
+      platform: '📱 플랫폼',
+      play: '🎮 플레이',
+      releaseDate: '📅 출시일',
+      keywords: '🔧 키워드'
+    },
+    placeholders: {
+      imageUrl: 'https://static.inven.co.kr/column/2026/05/18/news/i1910537337.jpg',
+      titleMain: '왕좌의 게임: 킹스로드',
+      titleSub: 'Game of Thrones: Kingsroad',
+      developer: '넷마블네오',
+      publisher: '넷마블',
+      platform: 'PC, Android, iOS',
+      play: 'PC',
+      releaseDate: '2026년 5월 14일(PC)\n2026년 5월 21일(모바일)',
+      keywords: '#액션RPG #어드벤처 #오픈월드'
+    },
+    cardLabels: {
+      developer: '개발사',
+      publisher: '퍼블리셔',
+      platform: '플랫폼',
+      play: '플레이',
+      releaseDate: '출시일',
+      keywords: '키워드'
+    },
+    sample: {
+      imageUrl: 'https://static.inven.co.kr/column/2026/05/18/news/i1910537337.jpg',
+      titleMain: '왕좌의 게임: 킹스로드',
+      titleSub: 'Game of Thrones: Kingsroad',
+      developer: '넷마블네오',
+      publisher: '넷마블',
+      platform: 'PC, Android, iOS',
+      play: 'PC',
+      releaseDate: '2026년 5월 14일(PC)\n2026년 5월 21일(모바일)',
+      keywords: '#액션RPG #어드벤처 #오픈월드'
+    },
+    buttons: {
+      reset: '초기화',
+      sample: '예시 채우기',
+      generate: '코드 생성',
+      download: '🖼️ 이미지 다운로드',
+      downloadBusy: '⏳ 변환 중...',
+      copy: '📋 코드 복사'
+    },
+    hint: '여러 줄 입력 시 줄바꿈으로 구분됩니다.',
+    previewEmpty: '좌측에 정보를 입력한 후 "코드 생성"을 눌러주세요.',
+    codePlaceholder: '생성된 HTML 코드가 여기에 표시됩니다.',
+    toasts: {
+      noTitle: '게임명을 입력해주세요.',
+      generated: '코드가 생성되었습니다!',
+      noCode: '먼저 코드를 생성해주세요.',
+      copied: '📋 클립보드에 복사되었습니다!',
+      copyFail: '복사 실패. 직접 선택해서 복사해주세요.',
+      reset: '초기화되었습니다.',
+      noCard: '먼저 "코드 생성"을 눌러주세요.',
+      converting: '이미지 변환 중... (잠시 기다려주세요)',
+      downloaded: '✅ 다운로드 완료!',
+      downloadFail: '❌ 이미지 생성 실패: ',
+      langChanged: '한국어로 전환되었습니다.'
+    }
+  },
+  en: {
+    htmlLang: 'en',
+    pageTitle: 'Game Info Card Generator',
+    pageSubtitle: 'Enter the information and click "Generate Code" to create HTML. Preview and copy the code from the right panel.',
+    formHeader: '📝 Game Information',
+    previewHeader: '👀 Preview',
+    codeHeader: '💾 HTML Code',
+    labels: {
+      imageUrl: 'Main Image URL',
+      titleMain: 'English Title',
+      titleSub: 'Korean Title (optional)',
+      developer: '🏢 Developer',
+      publisher: '🏢 Publisher',
+      platform: '📱 Platform',
+      play: '🎮 Played On',
+      releaseDate: '📅 Release Date',
+      keywords: '🔧 Keywords'
+    },
+    placeholders: {
+      imageUrl: 'https://static.inven.co.kr/column/2026/05/18/news/i1910537337.jpg',
+      titleMain: 'Game of Thrones: Kingsroad',
+      titleSub: '왕좌의 게임: 킹스로드',
+      developer: 'Netmarble Neo',
+      publisher: 'Netmarble',
+      platform: 'PC, Android, iOS',
+      play: 'PC',
+      releaseDate: 'May 14, 2026 (PC)\nMay 21, 2026 (Mobile)',
+      keywords: '#ActionRPG #Adventure #OpenWorld'
+    },
+    cardLabels: {
+      developer: 'Developer',
+      publisher: 'Publisher',
+      platform: 'Platform',
+      play: 'Played On',
+      releaseDate: 'Release Date',
+      keywords: 'Keywords'
+    },
+    sample: {
+      imageUrl: 'https://static.inven.co.kr/column/2026/05/18/news/i1910537337.jpg',
+      titleMain: 'Game of Thrones: Kingsroad',
+      titleSub: '왕좌의 게임: 킹스로드',
+      developer: 'Netmarble Neo',
+      publisher: 'Netmarble',
+      platform: 'PC, Android, iOS',
+      play: 'PC',
+      releaseDate: 'May 14, 2026 (PC)\nMay 21, 2026 (Mobile)',
+      keywords: '#ActionRPG #Adventure #OpenWorld'
+    },
+    buttons: {
+      reset: 'Reset',
+      sample: 'Load Sample',
+      generate: 'Generate Code',
+      download: '🖼️ Download Image',
+      downloadBusy: '⏳ Converting...',
+      copy: '📋 Copy Code'
+    },
+    hint: 'Use line breaks to separate multiple lines.',
+    previewEmpty: 'Enter information on the left and click "Generate Code".',
+    codePlaceholder: 'Generated HTML code will appear here.',
+    toasts: {
+      noTitle: 'Please enter a game title.',
+      generated: 'Code generated!',
+      noCode: 'Please generate the code first.',
+      copied: '📋 Copied to clipboard!',
+      copyFail: 'Copy failed. Please select and copy manually.',
+      reset: 'Form reset.',
+      noCard: 'Please click "Generate Code" first.',
+      converting: 'Converting image... (please wait)',
+      downloaded: '✅ Download complete!',
+      downloadFail: '❌ Image generation failed: ',
+      langChanged: 'Switched to English.'
+    }
+  }
+};
+
+const FIELD_IDS = ['imageUrl','titleMain','titleSub','developer','publisher','platform','play','releaseDate','keywords'];
+
+let currentLang = 'ko';
+
+/* ============================================================
+   언어 전환
+   ============================================================ */
+function setLang(lang) {
+  if (!I18N[lang]) return;
+  currentLang = lang;
+  try { localStorage.setItem('gameCardLang', lang); } catch (e) {}
+  applyLang();
+  if (document.getElementById('codeOutput').value) {
+    generate();
+  }
+  showToast(I18N[lang].toasts.langChanged);
+}
+
+function applyLang() {
+  const t = I18N[currentLang];
+
+  document.documentElement.lang = t.htmlLang;
+  document.getElementById('pageTitle').textContent = t.pageTitle;
+  document.getElementById('pageSubtitle').textContent = t.pageSubtitle;
+  document.getElementById('formHeader').textContent = t.formHeader;
+  document.getElementById('previewHeader').textContent = t.previewHeader;
+  document.getElementById('codeHeader').textContent = t.codeHeader;
+
+  Object.keys(t.labels).forEach(k => {
+    const el = document.getElementById('label-' + k);
+    if (el) el.textContent = t.labels[k];
+  });
+
+  Object.keys(t.placeholders).forEach(k => {
+    const el = document.getElementById(k);
+    if (el) el.placeholder = t.placeholders[k];
+  });
+
+  document.getElementById('hint-releaseDate').textContent = t.hint;
+  const previewEmpty = document.getElementById('previewEmpty');
+  if (previewEmpty) previewEmpty.textContent = t.previewEmpty;
+  document.getElementById('codeOutput').placeholder = t.codePlaceholder;
+
+  document.getElementById('btn-reset').textContent = t.buttons.reset;
+  document.getElementById('btn-sample').textContent = t.buttons.sample;
+  document.getElementById('btn-generate').textContent = t.buttons.generate;
+  document.getElementById('btn-download').textContent = t.buttons.download;
+  document.getElementById('btn-copy').textContent = t.buttons.copy;
+
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === currentLang);
+  });
+
+  document.title = t.pageTitle + ' / ' + (currentLang === 'ko' ? I18N.en.pageTitle : I18N.ko.pageTitle);
+}
+
+/* ============================================================
+   카드 HTML 생성
+   ============================================================ */
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function nl2br(str) {
+  if (!str) return '';
+  return escapeHtml(str).replace(/\n/g, '<br>');
+}
+
+function buildHtml(data) {
+  const cardLabels = I18N[currentLang].cardLabels;
+  const main = escapeHtml(data.titleMain);
+  const sub = escapeHtml(data.titleSub);
+  let title;
+  if (main && sub) title = main + ' (' + sub + ')';
+  else title = main || sub;
+
+  const rows = [
+    { icon: '&#x1F3E2;', label: cardLabels.developer,   value: escapeHtml(data.developer) },
+    { icon: '&#x1F3E2;', label: cardLabels.publisher,   value: escapeHtml(data.publisher) },
+    { icon: '&#x1F4F1;', label: cardLabels.platform,    value: escapeHtml(data.platform) },
+    { icon: '&#x1F3AE;', label: cardLabels.play,        value: escapeHtml(data.play) },
+    { icon: '&#x1F4C5;', label: cardLabels.releaseDate, value: nl2br(data.releaseDate) },
+    { icon: '&#x1F527;', label: cardLabels.keywords,    value: escapeHtml(data.keywords) }
+  ].filter(r => r.value);
+
+  const labelWidth = currentLang === 'en' ? 110 : 85;
+
+  const rowsHtml = rows.map((r, idx) => {
+    const isLast = idx === rows.length - 1;
+    const border = isLast ? 'none' : '1px solid #f3f5f7';
+    return `<span style="min-width:300px;flex:1 1 45%;border-bottom:${border};padding:10px 0;display:flex;align-items:flex-start;box-sizing:border-box;"><span style="width:${labelWidth}px;font-size:12px;color:#888;flex-shrink:0;padding-left:5px;display:inline-block;">${r.icon} ${r.label}</span><span style="font-size:14px;color:#1a1c20;font-weight:bold;padding-right:10px;line-height:1.4;">${r.value}</span></span>`;
+  }).join('');
+
+  const altText = escapeHtml(data.titleMain || data.titleSub || 'Game');
+
+  return `<span style="display:block;max-width:740px;margin:20px auto;font-family:'Pretendard','Malgun Gothic',sans-serif;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 25px rgba(0,0,0,0.07);border:1px solid #eceff3;box-sizing:border-box;line-height:0;"><img src="${escapeHtml(data.imageUrl)}" style="width:100%;height:auto;aspect-ratio:16/9;display:block;border:none;margin:0;padding:0;" alt="${altText}"><span style="display:flex;background-color:#ffffff;line-height:normal;"><span style="width:5px;background:linear-gradient(to bottom, #1a1a2e, #4a3728, #7a2e2e);flex-shrink:0;display:block;"></span><span style="display:block;padding:22px 28px;width:100%;box-sizing:border-box;"><span style="display:block;font-size:20px;font-weight:900;color:#1a1c20;margin-bottom:15px;letter-spacing:-1px;line-height:1.2;">${title}</span><span style="display:flex;flex-wrap:wrap;width:100%;">${rowsHtml}</span></span></span></span>`;
+}
+
+/* ============================================================
+   입력/생성/복사/초기화
+   ============================================================ */
+function getData() {
+  const data = {};
+  FIELD_IDS.forEach(id => { data[id] = document.getElementById(id).value.trim(); });
+  return data;
+}
+
+function generate() {
+  const data = getData();
+  if (!data.titleMain && !data.titleSub) {
+    showToast(I18N[currentLang].toasts.noTitle);
+    return;
+  }
+  const html = buildHtml(data);
+  document.getElementById('preview').innerHTML = html;
+  document.getElementById('codeOutput').value = html;
+  showToast(I18N[currentLang].toasts.generated);
+}
+
+function copyCode() {
+  const code = document.getElementById('codeOutput').value;
+  if (!code) {
+    showToast(I18N[currentLang].toasts.noCode);
+    return;
+  }
+  const textarea = document.getElementById('codeOutput');
+  textarea.select();
+  textarea.setSelectionRange(0, 99999);
+  try {
+    document.execCommand('copy');
+    showToast(I18N[currentLang].toasts.copied);
+  } catch (e) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(code).then(() => {
+        showToast(I18N[currentLang].toasts.copied);
+      });
+    } else {
+      showToast(I18N[currentLang].toasts.copyFail);
+    }
+  }
+  window.getSelection().removeAllRanges();
+}
+
+function resetForm() {
+  FIELD_IDS.forEach(id => { document.getElementById(id).value = ''; });
+  const preview = document.getElementById('preview');
+  preview.innerHTML = '<p style="color:#999;font-size:13px;text-align:center;margin:60px 0;" id="previewEmpty">' + I18N[currentLang].previewEmpty + '</p>';
+  document.getElementById('codeOutput').value = '';
+  showToast(I18N[currentLang].toasts.reset);
+}
+
+function loadSample() {
+  const s = I18N[currentLang].sample;
+  FIELD_IDS.forEach(id => {
+    document.getElementById(id).value = s[id] || '';
+  });
+  generate();
+}
+
+/* ============================================================
+   이미지 다운로드 (740px 폭 고정)
+   ============================================================ */
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function urlToDataUrl(url) {
+  try {
+    const res = await fetch(url, { mode: 'cors' });
+    if (res.ok) {
+      const blob = await res.blob();
+      return await blobToDataUrl(blob);
+    }
+  } catch (e) { /* fall through */ }
+  const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+  const res = await fetch(proxyUrl);
+  if (!res.ok) throw new Error('Image fetch failed');
+  const blob = await res.blob();
+  return await blobToDataUrl(blob);
+}
+
+function waitForImageLoad(img) {
+  return new Promise((resolve) => {
+    if (img.complete && img.naturalWidth > 0) resolve();
+    else { img.onload = resolve; img.onerror = resolve; }
+  });
+}
+
+const TARGET_WIDTH = 740;
+
+async function downloadImage() {
+  const preview = document.getElementById('preview');
+  const originalCard = preview.querySelector('span');
+  if (!originalCard) {
+    showToast(I18N[currentLang].toasts.noCard);
+    return;
+  }
+
+  const btn = document.getElementById('btn-download');
+  const originalBtnText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = I18N[currentLang].buttons.downloadBusy;
+  showToast(I18N[currentLang].toasts.converting);
+
+  const container = document.createElement('div');
+  container.style.cssText =
+    'position:fixed;left:-10000px;top:0;width:' + TARGET_WIDTH + 'px;' +
+    'background:#ffffff;padding:0;margin:0;z-index:-1;';
+  const cardClone = originalCard.cloneNode(true);
+  cardClone.style.maxWidth = TARGET_WIDTH + 'px';
+  cardClone.style.width = TARGET_WIDTH + 'px';
+  cardClone.style.margin = '0';
+  container.appendChild(cardClone);
+  document.body.appendChild(container);
+
+  try {
+    const images = container.querySelectorAll('img');
+    for (const img of images) {
+      try {
+        const dataUrl = await urlToDataUrl(img.src);
+        img.src = dataUrl;
+        await waitForImageLoad(img);
+      } catch (e) {
+        console.warn('Image conversion failed:', img.src, e);
+      }
+    }
+
+    const canvas = await html2canvas(cardClone, {
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: '#ffffff',
+      width: TARGET_WIDTH,
+      windowWidth: TARGET_WIDTH,
+      scale: 1,
+      logging: false
+    });
+
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const main = document.getElementById('titleMain').value.trim();
+      const sub = document.getElementById('titleSub').value.trim();
+      const filename = (main || sub || 'game-card').replace(/[\\/:*?"<>|]/g, '_');
+      a.href = url;
+      a.download = filename + '.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast(I18N[currentLang].toasts.downloaded + ' (' + canvas.width + '×' + canvas.height + 'px)');
+    }, 'image/png');
+  } catch (e) {
+    console.error(e);
+    showToast(I18N[currentLang].toasts.downloadFail + (e.message || 'unknown'));
+  } finally {
+    if (container.parentNode) container.parentNode.removeChild(container);
+    btn.disabled = false;
+    btn.textContent = originalBtnText;
+  }
+}
+
+/* ============================================================
+   토스트
+   ============================================================ */
+let toastTimer;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+/* ============================================================
+   초기화
+   ============================================================ */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+    e.preventDefault();
+    generate();
+  }
+});
+
+try {
+  const saved = localStorage.getItem('gameCardLang');
+  if (saved && I18N[saved]) currentLang = saved;
+} catch (e) {}
+applyLang();
+</script>
+
+</body>
+</html>
