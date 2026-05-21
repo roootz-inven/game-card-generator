@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>게임 정보 카드 생성기 / Game Info Card Generator</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -185,6 +186,132 @@
     border-top: 1px solid #e3e6eb;
   }
 
+  /* 그라데이션 색상 추출 */
+  .gradient-row {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .color-swatch-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+    max-width: 90px;
+  }
+  .color-swatch {
+    width: 100%;
+    height: 34px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid rgba(0,0,0,0.08);
+    transition: transform 0.1s, box-shadow 0.15s;
+    flex: none;
+    position: relative;
+  }
+  .color-swatch:hover {
+    transform: scale(1.04);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  .hex-input {
+    width: 100%;
+    padding: 5px 4px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 11px;
+    text-align: center;
+    border: 1px solid #d8dce2;
+    border-radius: 5px;
+    background: #fafbfc;
+    text-transform: lowercase;
+    height: 24px;
+    box-sizing: border-box;
+    color: #555;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .hex-input:focus {
+    outline: none;
+    border-color: #4a6cf7;
+    background: #fff;
+    color: #1a1c20;
+  }
+  .gradient-preview-bar {
+    flex: 0 0 18px;
+    align-self: stretch;
+    border-radius: 6px;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  .btn-extract {
+    flex: none;
+    align-self: center;
+    padding: 9px 14px;
+    background: #fff;
+    color: #1a1c20;
+    border: 1px solid #d8dce2;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+  .btn-extract:hover {
+    background: #f5f6f8;
+    border-color: #4a6cf7;
+    color: #4a6cf7;
+  }
+  .btn-extract:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* 키워드 칩 */
+  .keyword-groups {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .keyword-group-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b7280;
+    margin-bottom: 6px;
+    letter-spacing: -0.2px;
+  }
+  .keyword-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .keyword-chip {
+    flex: none !important;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.1s, color 0.1s, border-color 0.1s;
+    line-height: 1.4;
+  }
+  .keyword-chip:hover {
+    background: #e5e7eb;
+    color: #1a1c20;
+  }
+  .keyword-chip.active {
+    background: #1a1c20;
+    color: #fff;
+    border-color: #1a1c20;
+  }
+  .keyword-chip.active:hover {
+    background: #2d3138;
+  }
+
   .actions {
     display: flex;
     gap: 10px;
@@ -246,6 +373,92 @@
     background: #f8f9fb;
     resize: vertical;
   }
+  /* 컬러 팔레트 팝업 */
+  .color-palette-popup {
+    position: absolute;
+    background: #fff;
+    border: 1px solid #d8dce2;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    padding: 14px;
+    z-index: 10000;
+    width: 290px;
+    display: none;
+  }
+  .color-palette-popup.show { display: block; }
+  .palette-section { margin-bottom: 12px; }
+  .palette-section:last-of-type { margin-bottom: 0; }
+  .palette-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b7280;
+    margin-bottom: 6px;
+    letter-spacing: -0.2px;
+  }
+  .palette-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+  }
+  .palette-grid-empty {
+    grid-column: 1 / -1;
+    font-size: 11px;
+    color: #aaa;
+    padding: 12px;
+    text-align: center;
+    background: #fafbfc;
+    border-radius: 6px;
+  }
+  .palette-color {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 5px;
+    cursor: pointer;
+    border: 1px solid rgba(0,0,0,0.08);
+    transition: transform 0.1s, box-shadow 0.15s;
+  }
+  .palette-color:hover {
+    transform: scale(1.18);
+    z-index: 1;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .palette-actions {
+    display: flex;
+    gap: 6px;
+    border-top: 1px solid #eceff3;
+    padding-top: 10px;
+    margin-top: 12px;
+  }
+  .palette-actions button {
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    border: 1px solid #d8dce2;
+    transition: background 0.15s, color 0.15s;
+  }
+  .palette-btn-picker {
+    background: #fff;
+    color: #1a1c20;
+  }
+  .palette-btn-picker:hover {
+    background: #f5f6f8;
+    border-color: #4a6cf7;
+    color: #4a6cf7;
+  }
+  .palette-btn-close {
+    background: #eceff3;
+    color: #6b7280;
+    border-color: #eceff3;
+  }
+  .palette-btn-close:hover {
+    background: #dfe3e8;
+    color: #1a1c20;
+  }
+
   .toast {
     position: fixed;
     bottom: 30px;
@@ -302,6 +515,39 @@
       </div>
     </div>
 
+    <!-- 그라데이션 색상 -->
+    <div class="field">
+      <label id="label-gradient">🎨 그라데이션 색상 (좌측 컬러 바)</label>
+      <div class="gradient-row">
+        <div class="color-swatch-stack">
+          <div class="color-swatch" data-index="0" onclick="pickColor(0)" title="클릭해서 색상 변경"></div>
+          <input type="text" class="hex-input" data-index="0" maxlength="7" placeholder="#000000"
+                 onkeydown="if(event.key==='Enter'){updateColorFromHex(0,this.value);this.blur();}"
+                 onblur="updateColorFromHex(0,this.value)">
+        </div>
+        <div class="color-swatch-stack">
+          <div class="color-swatch" data-index="1" onclick="pickColor(1)" title="클릭해서 색상 변경"></div>
+          <input type="text" class="hex-input" data-index="1" maxlength="7" placeholder="#000000"
+                 onkeydown="if(event.key==='Enter'){updateColorFromHex(1,this.value);this.blur();}"
+                 onblur="updateColorFromHex(1,this.value)">
+        </div>
+        <div class="color-swatch-stack">
+          <div class="color-swatch" data-index="2" onclick="pickColor(2)" title="클릭해서 색상 변경"></div>
+          <input type="text" class="hex-input" data-index="2" maxlength="7" placeholder="#000000"
+                 onkeydown="if(event.key==='Enter'){updateColorFromHex(2,this.value);this.blur();}"
+                 onblur="updateColorFromHex(2,this.value)">
+        </div>
+        <div class="color-swatch-stack">
+          <div class="color-swatch" data-index="3" onclick="pickColor(3)" title="클릭해서 색상 변경"></div>
+          <input type="text" class="hex-input" data-index="3" maxlength="7" placeholder="#000000"
+                 onkeydown="if(event.key==='Enter'){updateColorFromHex(3,this.value);this.blur();}"
+                 onblur="updateColorFromHex(3,this.value)">
+        </div>
+        <div class="gradient-preview-bar" id="gradientPreviewBar" title="실제 그라데이션 미리보기"></div>
+        <button type="button" class="btn-extract" id="btnExtract" onclick="extractColors()">🎨 자동 추출</button>
+      </div>
+    </div>
+
     <div class="row">
       <div class="field">
         <label id="label-titleMain">한글 게임명</label>
@@ -344,6 +590,16 @@
     <div class="field">
       <label id="label-keywords">🔧 키워드</label>
       <input type="text" id="keywords">
+      <div class="keyword-groups">
+        <div class="keyword-group">
+          <div class="keyword-group-title" id="keywordGenreTitle">🎮 게임 장르 및 핵심 키워드</div>
+          <div class="keyword-chips" id="keywordGenreChips"></div>
+        </div>
+        <div class="keyword-group">
+          <div class="keyword-group-title" id="keywordSteamTitle">🏷️ 스팀 인기 태그</div>
+          <div class="keyword-chips" id="keywordSteamChips"></div>
+        </div>
+      </div>
     </div>
 
     <div class="actions">
@@ -360,15 +616,28 @@
       <p style="color:#999;font-size:13px;text-align:center;margin:60px 0;" id="previewEmpty">좌측에 정보를 입력한 후 "코드 생성"을 눌러주세요.</p>
     </div>
 
-    <h2 style="margin-top:8px;" id="codeHeader">💾 HTML 코드</h2>
-    <div class="code-area">
-      <textarea id="codeOutput" readonly></textarea>
-    </div>
+    <!-- 코드 저장용 hidden textarea (UI에 노출하지 않음) -->
+    <textarea id="codeOutput" readonly style="display:none;"></textarea>
 
     <div class="actions">
       <button class="btn-secondary" id="btn-download" onclick="downloadImage()">🖼️ 이미지 다운로드</button>
       <button class="btn-primary" id="btn-copy" onclick="copyCode()">📋 코드 복사</button>
     </div>
+  </div>
+</div>
+
+<!-- 컬러 팔레트 팝업 -->
+<div class="color-palette-popup" id="colorPalettePopup">
+  <div class="palette-section">
+    <div class="palette-section-title" id="paletteImageTitle">🖼️ 이미지에서 추출</div>
+    <div class="palette-grid" id="imageColorsGrid"></div>
+  </div>
+  <div class="palette-section">
+    <div class="palette-section-title" id="palettePresetTitle">🎨 추천 색상</div>
+    <div class="palette-grid" id="presetColorsGrid"></div>
+  </div>
+  <div class="palette-actions">
+    <button type="button" class="palette-btn-close" id="paletteBtnClose" onclick="closePalette()">닫기</button>
   </div>
 </div>
 
@@ -388,6 +657,7 @@ const I18N = {
     codeHeader: '💾 HTML 코드',
     labels: {
       image: '📷 대표 이미지',
+      gradient: '🎨 그라데이션 색상 (좌측 컬러 바)',
       titleMain: '한글 게임명',
       titleSub: '영문 게임명',
       developer: '🏢 개발사',
@@ -431,18 +701,30 @@ const I18N = {
       generate: '코드 생성',
       download: '🖼️ 이미지 다운로드',
       downloadBusy: '⏳ 변환 중...',
-      copy: '📋 코드 복사'
+      copy: '📋 코드 복사',
+      extract: '🎨 자동 추출'
     },
     uploadText: '클릭해서 파일 선택 또는 여기로 드래그',
     uploadHint: 'PNG, JPG, GIF · 클립보드에서 Ctrl+V로 붙여넣기도 가능',
+    paletteImageTitle: '🖼️ 이미지에서 추출',
+    palettePresetTitle: '🎨 추천 색상',
+    paletteEmpty: '이미지를 먼저 업로드하면 색상이 추출됩니다',
+    paletteBtnPicker: '🎨 컬러피커 열기',
+    paletteBtnClose: '닫기',
+    keywordGenreTitle: '🎮 게임 장르 및 핵심 키워드',
+    keywordSteamTitle: '🏷️ 스팀 인기 태그',
     hint: '여러 줄 입력 시 줄바꿈으로 구분됩니다.',
     previewEmpty: '좌측에 정보를 입력한 후 "코드 생성"을 눌러주세요.',
     codePlaceholder: '생성된 HTML 코드가 여기에 표시됩니다.',
     toasts: {
       noTitle: '게임명을 입력해주세요.',
       noImage: '대표 이미지를 업로드해주세요.',
+      noImageForExtract: '이미지를 먼저 업로드해주세요.',
       invalidImage: '이미지 파일만 업로드 가능합니다.',
       imageLoaded: '✅ 이미지 업로드 완료',
+      colorsExtracted: '✅ 색상 4개를 추출했습니다',
+      extractFail: '색상 추출에 실패했습니다',
+      invalidHex: '잘못된 색상 코드입니다 (예: #1a2b3c 또는 1a2b3c)',
       sampleLoaded: '텍스트 예시가 채워졌습니다. 이미지를 업로드해주세요.',
       generated: '코드가 생성되었습니다!',
       noCode: '먼저 코드를 생성해주세요.',
@@ -466,6 +748,7 @@ const I18N = {
     codeHeader: '💾 HTML Code',
     labels: {
       image: '📷 Main Image',
+      gradient: '🎨 Gradient Colors (Left Color Bar)',
       titleMain: 'English Title',
       titleSub: 'Korean Title (optional)',
       developer: '🏢 Developer',
@@ -509,18 +792,30 @@ const I18N = {
       generate: 'Generate Code',
       download: '🖼️ Download Image',
       downloadBusy: '⏳ Converting...',
-      copy: '📋 Copy Code'
+      copy: '📋 Copy Code',
+      extract: '🎨 Auto Extract'
     },
     uploadText: 'Click to select a file or drag it here',
     uploadHint: 'PNG, JPG, GIF · Paste from clipboard with Ctrl+V also works',
+    paletteImageTitle: '🖼️ Extracted from image',
+    palettePresetTitle: '🎨 Preset colors',
+    paletteEmpty: 'Upload an image first to see extracted colors',
+    paletteBtnPicker: '🎨 Open color picker',
+    paletteBtnClose: 'Close',
+    keywordGenreTitle: '🎮 Game Genres & Core Keywords',
+    keywordSteamTitle: '🏷️ Popular Steam Tags',
     hint: 'Use line breaks to separate multiple lines.',
     previewEmpty: 'Enter information on the left and click "Generate Code".',
     codePlaceholder: 'Generated HTML code will appear here.',
     toasts: {
       noTitle: 'Please enter a game title.',
       noImage: 'Please upload a main image.',
+      noImageForExtract: 'Please upload an image first.',
       invalidImage: 'Only image files can be uploaded.',
       imageLoaded: '✅ Image uploaded',
+      colorsExtracted: '✅ Extracted 4 colors',
+      extractFail: 'Color extraction failed',
+      invalidHex: 'Invalid color code (e.g. #1a2b3c or 1a2b3c)',
       sampleLoaded: 'Text sample loaded. Please upload an image.',
       generated: 'Code generated!',
       noCode: 'Please generate the code first.',
@@ -547,6 +842,39 @@ let currentImageHeight = 0;
 const MAX_IMAGE_WIDTH = 1480;   // 740px 표시용 2x retina
 const IMAGE_QUALITY = 0.85;
 
+// 그라데이션 색상 (4개) - 기본값은 어두운 무드 톤
+const DEFAULT_GRADIENT_COLORS = ['#1a1a2e', '#2a2535', '#4a3728', '#7a2e2e'];
+let gradientColors = [...DEFAULT_GRADIENT_COLORS];
+
+// 팔레트용 - 이미지에서 추출된 8개 색상 (팝업에 표시)
+let extractedPalette = [];
+
+// 키워드 칩 데이터
+const KEYWORD_GENRES = [
+  'RPG', 'MMORPG', 'FPS', 'TPS', 'RTS', 'MOBA', 'SLG', 'STG',
+  'TBS', 'A-RPG', 'TCG', 'Battle Royale', 'Puzzle', 'Roguelike', 'Platformer'
+];
+const KEYWORD_STEAM = [
+  'Indie', 'Action', 'Adventure', 'Casual', 'Simulation', 'Strategy',
+  'Singleplayer', 'Multiplayer', '2D', '3D', 'Pixel Graphics',
+  'First-Person', 'Third-Person', 'Top-Down', 'Anime', 'Atmospheric',
+  'Open World', 'Survival', 'Roguelite', 'Story Rich', 'Co-op',
+  'Difficult', 'Exploration', 'Funny', 'Horror', 'Sandbox',
+  'Crafting', 'Early Access', 'Free to Play', 'Great Soundtrack'
+];
+
+// 추천 프리셋 색상 (게임 카드용 무드 톤)
+const PRESET_PALETTE = [
+  // 모노 / 다크
+  '#000000', '#1a1c20', '#2d3138', '#4a4a4a', '#6b7280', '#9ca3af', '#d1d5db', '#ffffff',
+  // 다크 무드 (남색/네이비)
+  '#1a1a2e', '#16213e', '#0f3460', '#533483', '#7209b7', '#3a0ca3', '#4361ee', '#4cc9f0',
+  // 판타지 (브라운/레드)
+  '#2c1810', '#4a3728', '#7a2e2e', '#a4161a', '#c44569', '#d97706', '#fbbf24', '#fde68a',
+  // 액션 / 비비드
+  '#dc2626', '#ea580c', '#16a34a', '#0891b2', '#2563eb', '#7c3aed', '#db2777', '#e11d48'
+];
+
 /* ============================================================
    언어 전환
    ============================================================ */
@@ -569,7 +897,6 @@ function applyLang() {
   document.getElementById('pageSubtitle').textContent = t.pageSubtitle;
   document.getElementById('formHeader').textContent = t.formHeader;
   document.getElementById('previewHeader').textContent = t.previewHeader;
-  document.getElementById('codeHeader').textContent = t.codeHeader;
 
   Object.keys(t.labels).forEach(k => {
     const el = document.getElementById('label-' + k);
@@ -586,13 +913,18 @@ function applyLang() {
   document.getElementById('uploadHint').textContent = t.uploadHint;
   const previewEmpty = document.getElementById('previewEmpty');
   if (previewEmpty) previewEmpty.textContent = t.previewEmpty;
-  document.getElementById('codeOutput').placeholder = t.codePlaceholder;
 
   document.getElementById('btn-reset').textContent = t.buttons.reset;
   document.getElementById('btn-sample').textContent = t.buttons.sample;
   document.getElementById('btn-generate').textContent = t.buttons.generate;
   document.getElementById('btn-download').textContent = t.buttons.download;
   document.getElementById('btn-copy').textContent = t.buttons.copy;
+  document.getElementById('btnExtract').textContent = t.buttons.extract;
+  document.getElementById('paletteImageTitle').textContent = t.paletteImageTitle;
+  document.getElementById('palettePresetTitle').textContent = t.palettePresetTitle;
+  document.getElementById('paletteBtnClose').textContent = t.paletteBtnClose;
+  document.getElementById('keywordGenreTitle').textContent = t.keywordGenreTitle;
+  document.getElementById('keywordSteamTitle').textContent = t.keywordSteamTitle;
 
   // 이미 업로드된 이미지가 있다면 info 텍스트 다시 그리기
   if (currentImageDataUrl) {
@@ -647,6 +979,9 @@ function handleImageFile(file) {
 
       showToast(I18N[currentLang].toasts.imageLoaded);
 
+      // 이미지 업로드되면 그라데이션 색상도 자동으로 추출
+      extractColors();
+
       // 이미 다른 정보가 채워져 있으면 미리보기 자동 갱신
       if (document.getElementById('codeOutput').value) {
         generate();
@@ -668,6 +1003,7 @@ function clearImage(event) {
   currentImageDataUrl = '';
   currentImageWidth = 0;
   currentImageHeight = 0;
+  extractedPalette = [];
   document.getElementById('imageFile').value = '';
   document.getElementById('imagePreview').src = '';
   document.getElementById('imagePreviewWrapper').style.display = 'none';
@@ -719,6 +1055,242 @@ function setupImageUpload() {
 }
 
 /* ============================================================
+   키워드 칩 (장르 / 스팀 태그)
+   ============================================================ */
+function keywordToHashtag(text) {
+  // 공백과 하이픈 제거 → 해시태그 형식
+  return '#' + text.replace(/[\s\-]/g, '');
+}
+
+function parseKeywordTags(value) {
+  if (!value) return [];
+  return value.trim().split(/\s+/).filter(t => t.length > 0);
+}
+
+function toggleKeyword(text) {
+  const tag = keywordToHashtag(text);
+  const field = document.getElementById('keywords');
+  const tags = parseKeywordTags(field.value);
+
+  const lowerTag = tag.toLowerCase();
+  const idx = tags.findIndex(t => t.toLowerCase() === lowerTag);
+  if (idx >= 0) {
+    tags.splice(idx, 1);
+  } else {
+    tags.push(tag);
+  }
+  field.value = tags.join(' ');
+  updateKeywordButtons();
+
+  if (document.getElementById('codeOutput').value) generate();
+}
+
+function updateKeywordButtons() {
+  const tags = parseKeywordTags(document.getElementById('keywords').value)
+    .map(t => t.toLowerCase());
+  document.querySelectorAll('.keyword-chip').forEach(btn => {
+    const tag = keywordToHashtag(btn.dataset.keyword).toLowerCase();
+    btn.classList.toggle('active', tags.includes(tag));
+  });
+}
+
+function renderKeywordChips() {
+  const buildGroup = (containerId, keywords) => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    keywords.forEach(kw => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'keyword-chip';
+      btn.dataset.keyword = kw;
+      btn.textContent = kw;
+      btn.addEventListener('click', () => toggleKeyword(kw));
+      container.appendChild(btn);
+    });
+  };
+  buildGroup('keywordGenreChips', KEYWORD_GENRES);
+  buildGroup('keywordSteamChips', KEYWORD_STEAM);
+}
+
+/* ============================================================
+   그라데이션 색상 (스와치, 추출, 컬러피커)
+   ============================================================ */
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map(x => Math.max(0, Math.min(255, x)).toString(16).padStart(2, '0')).join('');
+}
+
+function renderSwatches() {
+  for (let i = 0; i < 4; i++) {
+    const sw = document.querySelector('.color-swatch[data-index="' + i + '"]');
+    if (sw) sw.style.background = gradientColors[i];
+    const hex = document.querySelector('.hex-input[data-index="' + i + '"]');
+    if (hex && document.activeElement !== hex) {
+      // 사용자가 입력 중이 아닐 때만 값 갱신 (편집 중인 텍스트를 덮어쓰지 않도록)
+      hex.value = gradientColors[i];
+    }
+  }
+  const bar = document.getElementById('gradientPreviewBar');
+  if (bar) {
+    bar.style.background = `linear-gradient(to bottom, ${gradientColors.join(', ')})`;
+  }
+}
+
+function updateColorFromHex(index, value) {
+  let v = String(value || '').trim().toLowerCase();
+  if (!v.startsWith('#')) v = '#' + v;
+
+  // 6자리 / 3자리 hex 모두 허용
+  if (/^#[0-9a-f]{6}$/.test(v)) {
+    // 6자리는 그대로
+  } else if (/^#[0-9a-f]{3}$/.test(v)) {
+    // 3자리는 6자리로 확장
+    v = '#' + v[1] + v[1] + v[2] + v[2] + v[3] + v[3];
+  } else {
+    // 유효하지 않은 값 - 기존 값으로 복원
+    const hex = document.querySelector('.hex-input[data-index="' + index + '"]');
+    if (hex) hex.value = gradientColors[index];
+    if (value && value.trim()) {
+      showToast(I18N[currentLang].toasts.invalidHex);
+    }
+    return;
+  }
+
+  if (gradientColors[index] === v) {
+    // 값이 같으면 표시만 정리
+    const hex = document.querySelector('.hex-input[data-index="' + index + '"]');
+    if (hex) hex.value = v;
+    return;
+  }
+
+  gradientColors[index] = v;
+  renderSwatches();
+  if (document.getElementById('codeOutput').value) generate();
+}
+
+let pickerTargetIndex = -1;
+
+function pickColor(index) {
+  pickerTargetIndex = index;
+  showPalette(index);
+}
+
+function showPalette(index) {
+  const popup = document.getElementById('colorPalettePopup');
+  const swatch = document.querySelector('.color-swatch[data-index="' + index + '"]');
+  if (!swatch || !popup) return;
+
+  // 스와치 바로 아래에 위치
+  const rect = swatch.getBoundingClientRect();
+  const popupWidth = 290;
+  let left = rect.left;
+  // 화면 우측 밖으로 나가지 않도록
+  if (left + popupWidth > window.innerWidth - 16) {
+    left = window.innerWidth - popupWidth - 16;
+  }
+  if (left < 16) left = 16;
+
+  popup.style.left = left + 'px';
+  popup.style.top = (rect.bottom + window.scrollY + 8) + 'px';
+
+  // 색상 그리드 채우기
+  populatePaletteGrid('imageColorsGrid', extractedPalette, true);
+  populatePaletteGrid('presetColorsGrid', PRESET_PALETTE, false);
+
+  popup.classList.add('show');
+}
+
+function populatePaletteGrid(gridId, colors, allowEmpty) {
+  const grid = document.getElementById(gridId);
+  grid.innerHTML = '';
+  if (!colors || colors.length === 0) {
+    if (allowEmpty) {
+      const empty = document.createElement('div');
+      empty.className = 'palette-grid-empty';
+      empty.textContent = I18N[currentLang].paletteEmpty;
+      grid.appendChild(empty);
+    }
+    return;
+  }
+  colors.forEach(color => {
+    const div = document.createElement('div');
+    div.className = 'palette-color';
+    div.style.background = color;
+    div.title = color;
+    div.addEventListener('click', () => selectPaletteColor(color));
+    grid.appendChild(div);
+  });
+}
+
+function selectPaletteColor(color) {
+  if (pickerTargetIndex < 0) return;
+  gradientColors[pickerTargetIndex] = color;
+  renderSwatches();
+  if (document.getElementById('codeOutput').value) generate();
+  closePalette();
+}
+
+function closePalette() {
+  document.getElementById('colorPalettePopup').classList.remove('show');
+  pickerTargetIndex = -1;
+}
+
+async function extractColors() {
+  if (!currentImageDataUrl) {
+    showToast(I18N[currentLang].toasts.noImageForExtract);
+    return;
+  }
+  if (typeof ColorThief === 'undefined') {
+    showToast(I18N[currentLang].toasts.extractFail);
+    return;
+  }
+
+  const btn = document.getElementById('btnExtract');
+  btn.disabled = true;
+
+  try {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = currentImageDataUrl;
+    });
+
+    const colorThief = new ColorThief();
+    // 그라데이션용 4색
+    const palette = colorThief.getPalette(img, 4);
+    if (!palette || palette.length < 4) {
+      throw new Error('not enough colors');
+    }
+
+    // 팔레트 팝업용 8색 (더 다양한 선택지 제공)
+    try {
+      const wider = colorThief.getPalette(img, 8);
+      if (wider && wider.length > 0) {
+        extractedPalette = wider.map(rgb => rgbToHex(rgb[0], rgb[1], rgb[2]));
+      }
+    } catch (e) { /* 무시 */ }
+
+    // 추출된 색상을 어두운 순(밝기 기준)으로 정렬해서 그라데이션이 자연스럽게 보이도록
+    const sorted = palette
+      .map(rgb => ({ rgb, brightness: (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000 }))
+      .sort((a, b) => a.brightness - b.brightness)
+      .map(o => o.rgb);
+
+    gradientColors = sorted.map(rgb => rgbToHex(rgb[0], rgb[1], rgb[2]));
+    renderSwatches();
+    if (document.getElementById('codeOutput').value) generate();
+    showToast(I18N[currentLang].toasts.colorsExtracted);
+  } catch (e) {
+    console.error(e);
+    showToast(I18N[currentLang].toasts.extractFail);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ============================================================
    카드 HTML 생성
    ============================================================ */
 function escapeHtml(str) {
@@ -753,18 +1325,22 @@ function buildHtml(data) {
     { icon: '&#x1F527;', label: cardLabels.keywords,    value: escapeHtml(data.keywords) }
   ].filter(r => r.value);
 
-  const labelWidth = currentLang === 'en' ? 110 : 85;
+  // 영어 라벨이 더 길고, 큰 이모지(18px) + 갭(5px) + 굵어진 라벨(14px bold) 공간 확보
+  const labelWidth = currentLang === 'en' ? 150 : 115;
 
   const rowsHtml = rows.map((r, idx) => {
     const isLast = idx === rows.length - 1;
     const border = isLast ? 'none' : '1px solid #f3f5f7';
-    return `<span style="min-width:300px;flex:1 1 45%;border-bottom:${border};padding:10px 0;display:flex;align-items:flex-start;box-sizing:border-box;"><span style="width:${labelWidth}px;font-size:12px;color:#888;flex-shrink:0;padding-left:5px;display:inline-block;">${r.icon} ${r.label}</span><span style="font-size:14px;color:#1a1c20;font-weight:bold;padding-right:10px;line-height:1.4;">${r.value}</span></span>`;
+    return `<span style="min-width:300px;flex:1 1 45%;border-bottom:${border};padding:10px 0;display:flex;align-items:flex-start;box-sizing:border-box;"><span style="width:${labelWidth}px;flex-shrink:0;padding-left:5px;display:inline-flex;align-items:center;gap:5px;"><span style="font-size:18px;line-height:1;">${r.icon}</span><span style="font-size:14px;color:#1a1c20;font-weight:bold;">${r.label}</span></span><span style="font-size:12px;color:#888;padding-right:10px;line-height:1.4;">${r.value}</span></span>`;
   }).join('');
 
   const altText = escapeHtml(data.titleMain || data.titleSub || 'Game');
 
+  // 사용자가 설정한 그라데이션 색상
+  const gradient = `linear-gradient(to bottom, ${gradientColors.join(', ')})`;
+
   // data.imageUrl 은 업로드된 이미지의 base64 data URL
-  return `<span style="display:block;max-width:740px;margin:20px auto;font-family:'Pretendard','Malgun Gothic',sans-serif;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 25px rgba(0,0,0,0.07);border:1px solid #eceff3;box-sizing:border-box;line-height:0;"><img src="${data.imageUrl}" style="width:100%;height:auto;aspect-ratio:16/9;display:block;border:none;margin:0;padding:0;object-fit:cover;" alt="${altText}"><span style="display:flex;background-color:#ffffff;line-height:normal;"><span style="width:5px;background:linear-gradient(to bottom, #1a1a2e, #4a3728, #7a2e2e);flex-shrink:0;display:block;"></span><span style="display:block;padding:22px 28px;width:100%;box-sizing:border-box;"><span style="display:block;font-size:20px;font-weight:900;color:#1a1c20;margin-bottom:15px;letter-spacing:-1px;line-height:1.2;">${title}</span><span style="display:flex;flex-wrap:wrap;width:100%;">${rowsHtml}</span></span></span></span>`;
+  return `<span style="display:block;max-width:740px;margin:20px auto;font-family:'Pretendard','Malgun Gothic',sans-serif;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 25px rgba(0,0,0,0.07);border:1px solid #eceff3;box-sizing:border-box;line-height:0;"><img src="${data.imageUrl}" style="width:100%;height:auto;aspect-ratio:16/9;display:block;border:none;margin:0;padding:0;object-fit:cover;" alt="${altText}"><span style="display:flex;background-color:#ffffff;line-height:normal;"><span style="width:5px;background:${gradient};flex-shrink:0;display:block;"></span><span style="display:block;padding:22px 28px;width:100%;box-sizing:border-box;"><span style="display:block;font-size:20px;font-weight:900;color:#1a1c20;margin-bottom:15px;letter-spacing:-1px;line-height:1.2;">${title}</span><span style="display:flex;flex-wrap:wrap;width:100%;">${rowsHtml}</span></span></span></span>`;
 }
 
 /* ============================================================
@@ -799,27 +1375,45 @@ function copyCode() {
     showToast(I18N[currentLang].toasts.noCode);
     return;
   }
-  const textarea = document.getElementById('codeOutput');
-  textarea.select();
-  textarea.setSelectionRange(0, 99999);
-  try {
-    document.execCommand('copy');
-    showToast(I18N[currentLang].toasts.copied);
-  } catch (e) {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(code).then(() => {
-        showToast(I18N[currentLang].toasts.copied);
-      });
-    } else {
-      showToast(I18N[currentLang].toasts.copyFail);
-    }
+
+  // 1순위: navigator.clipboard (HTTPS / 최신 브라우저)
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(() => {
+      showToast(I18N[currentLang].toasts.copied);
+    }).catch(() => {
+      // 실패 시 fallback
+      fallbackCopy(code);
+    });
+    return;
   }
-  window.getSelection().removeAllRanges();
+
+  fallbackCopy(code);
+}
+
+// 구형 브라우저용 fallback: 임시 textarea를 보이지 않게 만들어 복사
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    const ok = document.execCommand('copy');
+    showToast(ok ? I18N[currentLang].toasts.copied : I18N[currentLang].toasts.copyFail);
+  } catch (e) {
+    showToast(I18N[currentLang].toasts.copyFail);
+  } finally {
+    document.body.removeChild(ta);
+  }
 }
 
 function resetForm() {
   FIELD_IDS.forEach(id => { document.getElementById(id).value = ''; });
   clearImage();
+  gradientColors = [...DEFAULT_GRADIENT_COLORS];
+  renderSwatches();
+  updateKeywordButtons();
   const preview = document.getElementById('preview');
   preview.innerHTML = '<p style="color:#999;font-size:13px;text-align:center;margin:60px 0;" id="previewEmpty">' + I18N[currentLang].previewEmpty + '</p>';
   document.getElementById('codeOutput').value = '';
@@ -831,6 +1425,7 @@ function loadSample() {
   FIELD_IDS.forEach(id => {
     if (s[id] !== undefined) document.getElementById(id).value = s[id];
   });
+  updateKeywordButtons();
   if (currentImageDataUrl) {
     generate();
   } else {
@@ -940,11 +1535,47 @@ document.addEventListener('keydown', (e) => {
 
 setupImageUpload();
 
+// 키워드 칩 렌더링 + 입력란 변경 감지
+renderKeywordChips();
+document.getElementById('keywords').addEventListener('input', updateKeywordButtons);
+
+// 팔레트 팝업: 외부 클릭 / ESC로 닫기
+document.addEventListener('mousedown', (e) => {
+  const popup = document.getElementById('colorPalettePopup');
+  if (!popup.classList.contains('show')) return;
+  // 팝업 내부 클릭은 무시
+  if (popup.contains(e.target)) return;
+  // 스와치를 다시 클릭한 경우는 무시 (showPalette가 처리)
+  if (e.target.classList && e.target.classList.contains('color-swatch')) return;
+  closePalette();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const popup = document.getElementById('colorPalettePopup');
+    if (popup.classList.contains('show')) closePalette();
+  }
+});
+
+// 스크롤 / 리사이즈 시 팝업 닫기 (위치가 어긋나는 것 방지)
+window.addEventListener('scroll', () => {
+  const popup = document.getElementById('colorPalettePopup');
+  if (popup.classList.contains('show')) closePalette();
+}, true);
+window.addEventListener('resize', () => {
+  const popup = document.getElementById('colorPalettePopup');
+  if (popup.classList.contains('show')) closePalette();
+});
+
+// 초기 스와치 렌더링
+renderSwatches();
+
 try {
   const saved = localStorage.getItem('gameCardLang');
   if (saved && I18N[saved]) currentLang = saved;
 } catch (e) {}
 applyLang();
+updateKeywordButtons();
 </script>
 
 </body>
