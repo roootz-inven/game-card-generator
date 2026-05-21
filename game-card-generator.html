@@ -118,6 +118,73 @@
     color: #999;
     margin-top: 4px;
   }
+
+  /* 이미지 업로드 영역 */
+  .image-upload-zone {
+    position: relative;
+    border: 2px dashed #d8dce2;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    overflow: hidden;
+    min-height: 140px;
+    background: #fafbfc;
+  }
+  .image-upload-zone:hover { border-color: #4a6cf7; background: #f5f7ff; }
+  .image-upload-zone.dragging { border-color: #4a6cf7; background: #eef3ff; border-style: solid; }
+  .image-upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    text-align: center;
+    pointer-events: none;
+  }
+  .upload-icon { font-size: 32px; margin-bottom: 8px; }
+  .upload-text { font-size: 13px; color: #555; font-weight: 600; }
+  .upload-hint { font-size: 11px; color: #999; margin-top: 4px; line-height: 1.5; }
+  .image-preview-wrapper {
+    position: relative;
+  }
+  .image-preview-wrapper img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 280px;
+    object-fit: contain;
+    background: #f0f2f5;
+  }
+  .image-clear-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    flex: none !important;
+    transition: background 0.15s;
+  }
+  .image-clear-btn:hover { background: rgba(0,0,0,0.9); }
+  .image-info {
+    font-size: 11px;
+    color: #6b7280;
+    padding: 8px 12px;
+    background: #f0f2f5;
+    border-top: 1px solid #e3e6eb;
+  }
+
   .actions {
     display: flex;
     gap: 10px;
@@ -217,9 +284,22 @@
 
     <h2 id="formHeader">📝 게임 정보 입력</h2>
 
+    <!-- 이미지 업로드 -->
     <div class="field">
-      <label id="label-imageUrl">대표 이미지 URL</label>
-      <input type="text" id="imageUrl">
+      <label id="label-image">📷 대표 이미지</label>
+      <div class="image-upload-zone" id="imageDropZone">
+        <input type="file" id="imageFile" accept="image/*" style="display:none;">
+        <div class="image-upload-content" id="imageUploadContent">
+          <div class="upload-icon">📤</div>
+          <div class="upload-text" id="uploadText">클릭해서 파일 선택 또는 여기로 드래그</div>
+          <div class="upload-hint" id="uploadHint">PNG, JPG, GIF · 클립보드에서 Ctrl+V로 붙여넣기도 가능</div>
+        </div>
+        <div class="image-preview-wrapper" id="imagePreviewWrapper" style="display:none;">
+          <img id="imagePreview" alt="">
+          <button type="button" class="image-clear-btn" id="imageClearBtn" onclick="clearImage(event)">×</button>
+          <div class="image-info" id="imageInfo"></div>
+        </div>
+      </div>
     </div>
 
     <div class="row">
@@ -307,7 +387,7 @@ const I18N = {
     previewHeader: '👀 미리보기',
     codeHeader: '💾 HTML 코드',
     labels: {
-      imageUrl: '대표 이미지 URL',
+      image: '📷 대표 이미지',
       titleMain: '한글 게임명',
       titleSub: '영문 게임명',
       developer: '🏢 개발사',
@@ -318,7 +398,6 @@ const I18N = {
       keywords: '🔧 키워드'
     },
     placeholders: {
-      imageUrl: 'https://static.inven.co.kr/column/2026/05/18/news/i1910537337.jpg',
       titleMain: '왕좌의 게임: 킹스로드',
       titleSub: 'Game of Thrones: Kingsroad',
       developer: '넷마블네오',
@@ -337,7 +416,6 @@ const I18N = {
       keywords: '키워드'
     },
     sample: {
-      imageUrl: 'https://static.inven.co.kr/column/2026/05/18/news/i1910537337.jpg',
       titleMain: '왕좌의 게임: 킹스로드',
       titleSub: 'Game of Thrones: Kingsroad',
       developer: '넷마블네오',
@@ -355,11 +433,17 @@ const I18N = {
       downloadBusy: '⏳ 변환 중...',
       copy: '📋 코드 복사'
     },
+    uploadText: '클릭해서 파일 선택 또는 여기로 드래그',
+    uploadHint: 'PNG, JPG, GIF · 클립보드에서 Ctrl+V로 붙여넣기도 가능',
     hint: '여러 줄 입력 시 줄바꿈으로 구분됩니다.',
     previewEmpty: '좌측에 정보를 입력한 후 "코드 생성"을 눌러주세요.',
     codePlaceholder: '생성된 HTML 코드가 여기에 표시됩니다.',
     toasts: {
       noTitle: '게임명을 입력해주세요.',
+      noImage: '대표 이미지를 업로드해주세요.',
+      invalidImage: '이미지 파일만 업로드 가능합니다.',
+      imageLoaded: '✅ 이미지 업로드 완료',
+      sampleLoaded: '텍스트 예시가 채워졌습니다. 이미지를 업로드해주세요.',
       generated: '코드가 생성되었습니다!',
       noCode: '먼저 코드를 생성해주세요.',
       copied: '📋 클립보드에 복사되었습니다!',
@@ -370,7 +454,8 @@ const I18N = {
       downloaded: '✅ 다운로드 완료!',
       downloadFail: '❌ 이미지 생성 실패: ',
       langChanged: '한국어로 전환되었습니다.'
-    }
+    },
+    imageInfoFmt: (w, h, kb) => `${w}×${h}px · ${kb}KB (자동 리사이즈 적용)`
   },
   en: {
     htmlLang: 'en',
@@ -380,7 +465,7 @@ const I18N = {
     previewHeader: '👀 Preview',
     codeHeader: '💾 HTML Code',
     labels: {
-      imageUrl: 'Main Image URL',
+      image: '📷 Main Image',
       titleMain: 'English Title',
       titleSub: 'Korean Title (optional)',
       developer: '🏢 Developer',
@@ -391,7 +476,6 @@ const I18N = {
       keywords: '🔧 Keywords'
     },
     placeholders: {
-      imageUrl: 'https://static.inven.co.kr/column/2026/05/18/news/i1910537337.jpg',
       titleMain: 'Game of Thrones: Kingsroad',
       titleSub: '왕좌의 게임: 킹스로드',
       developer: 'Netmarble Neo',
@@ -410,7 +494,6 @@ const I18N = {
       keywords: 'Keywords'
     },
     sample: {
-      imageUrl: 'https://static.inven.co.kr/column/2026/05/18/news/i1910537337.jpg',
       titleMain: 'Game of Thrones: Kingsroad',
       titleSub: '왕좌의 게임: 킹스로드',
       developer: 'Netmarble Neo',
@@ -428,11 +511,17 @@ const I18N = {
       downloadBusy: '⏳ Converting...',
       copy: '📋 Copy Code'
     },
+    uploadText: 'Click to select a file or drag it here',
+    uploadHint: 'PNG, JPG, GIF · Paste from clipboard with Ctrl+V also works',
     hint: 'Use line breaks to separate multiple lines.',
     previewEmpty: 'Enter information on the left and click "Generate Code".',
     codePlaceholder: 'Generated HTML code will appear here.',
     toasts: {
       noTitle: 'Please enter a game title.',
+      noImage: 'Please upload a main image.',
+      invalidImage: 'Only image files can be uploaded.',
+      imageLoaded: '✅ Image uploaded',
+      sampleLoaded: 'Text sample loaded. Please upload an image.',
       generated: 'Code generated!',
       noCode: 'Please generate the code first.',
       copied: '📋 Copied to clipboard!',
@@ -443,13 +532,20 @@ const I18N = {
       downloaded: '✅ Download complete!',
       downloadFail: '❌ Image generation failed: ',
       langChanged: 'Switched to English.'
-    }
+    },
+    imageInfoFmt: (w, h, kb) => `${w}×${h}px · ${kb}KB (auto-resized)`
   }
 };
 
-const FIELD_IDS = ['imageUrl','titleMain','titleSub','developer','publisher','platform','play','releaseDate','keywords'];
+const FIELD_IDS = ['titleMain','titleSub','developer','publisher','platform','play','releaseDate','keywords'];
 
 let currentLang = 'ko';
+let currentImageDataUrl = '';
+let currentImageWidth = 0;
+let currentImageHeight = 0;
+
+const MAX_IMAGE_WIDTH = 1480;   // 740px 표시용 2x retina
+const IMAGE_QUALITY = 0.85;
 
 /* ============================================================
    언어 전환
@@ -486,6 +582,8 @@ function applyLang() {
   });
 
   document.getElementById('hint-releaseDate').textContent = t.hint;
+  document.getElementById('uploadText').textContent = t.uploadText;
+  document.getElementById('uploadHint').textContent = t.uploadHint;
   const previewEmpty = document.getElementById('previewEmpty');
   if (previewEmpty) previewEmpty.textContent = t.previewEmpty;
   document.getElementById('codeOutput').placeholder = t.codePlaceholder;
@@ -496,11 +594,128 @@ function applyLang() {
   document.getElementById('btn-download').textContent = t.buttons.download;
   document.getElementById('btn-copy').textContent = t.buttons.copy;
 
+  // 이미 업로드된 이미지가 있다면 info 텍스트 다시 그리기
+  if (currentImageDataUrl) {
+    updateImageInfo();
+  }
+
   document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.lang === currentLang);
   });
 
   document.title = t.pageTitle + ' / ' + (currentLang === 'ko' ? I18N.en.pageTitle : I18N.ko.pageTitle);
+}
+
+/* ============================================================
+   이미지 업로드
+   ============================================================ */
+function handleImageFile(file) {
+  if (!file || !file.type || !file.type.startsWith('image/')) {
+    showToast(I18N[currentLang].toasts.invalidImage);
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      // 큰 이미지는 자동 리사이즈
+      if (width > MAX_IMAGE_WIDTH) {
+        height = Math.round(height * (MAX_IMAGE_WIDTH / width));
+        width = MAX_IMAGE_WIDTH;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      // 흰 배경 (JPEG는 투명도 지원 안 함)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const dataUrl = canvas.toDataURL('image/jpeg', IMAGE_QUALITY);
+      currentImageDataUrl = dataUrl;
+      currentImageWidth = width;
+      currentImageHeight = height;
+
+      // 미리보기 표시
+      document.getElementById('imagePreview').src = dataUrl;
+      document.getElementById('imagePreviewWrapper').style.display = 'block';
+      document.getElementById('imageUploadContent').style.display = 'none';
+      updateImageInfo();
+
+      showToast(I18N[currentLang].toasts.imageLoaded);
+
+      // 이미 다른 정보가 채워져 있으면 미리보기 자동 갱신
+      if (document.getElementById('codeOutput').value) {
+        generate();
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateImageInfo() {
+  const sizeKb = Math.round(currentImageDataUrl.length * 3 / 4 / 1024);
+  document.getElementById('imageInfo').textContent =
+    I18N[currentLang].imageInfoFmt(currentImageWidth, currentImageHeight, sizeKb);
+}
+
+function clearImage(event) {
+  if (event) event.stopPropagation();
+  currentImageDataUrl = '';
+  currentImageWidth = 0;
+  currentImageHeight = 0;
+  document.getElementById('imageFile').value = '';
+  document.getElementById('imagePreview').src = '';
+  document.getElementById('imagePreviewWrapper').style.display = 'none';
+  document.getElementById('imageUploadContent').style.display = '';
+}
+
+function setupImageUpload() {
+  const dropZone = document.getElementById('imageDropZone');
+  const fileInput = document.getElementById('imageFile');
+
+  // 클릭으로 파일 선택
+  dropZone.addEventListener('click', (e) => {
+    // 미리보기에서 X 버튼 클릭은 제외 (stopPropagation 처리됨)
+    if (e.target.id === 'imageClearBtn') return;
+    fileInput.click();
+  });
+
+  // 파일 선택 이벤트
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files[0]) handleImageFile(e.target.files[0]);
+  });
+
+  // 드래그앤드롭
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragging');
+  });
+  dropZone.addEventListener('dragleave', (e) => {
+    if (e.target === dropZone) dropZone.classList.remove('dragging');
+  });
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragging');
+    const file = e.dataTransfer.files[0];
+    if (file) handleImageFile(file);
+  });
+
+  // 페이지 어디서나 Ctrl+V로 이미지 붙여넣기
+  document.addEventListener('paste', (e) => {
+    if (!e.clipboardData) return;
+    for (const item of e.clipboardData.items) {
+      if (item.type && item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) handleImageFile(file);
+        break;
+      }
+    }
+  });
 }
 
 /* ============================================================
@@ -548,7 +763,8 @@ function buildHtml(data) {
 
   const altText = escapeHtml(data.titleMain || data.titleSub || 'Game');
 
-  return `<span style="display:block;max-width:740px;margin:20px auto;font-family:'Pretendard','Malgun Gothic',sans-serif;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 25px rgba(0,0,0,0.07);border:1px solid #eceff3;box-sizing:border-box;line-height:0;"><img src="${escapeHtml(data.imageUrl)}" style="width:100%;height:auto;aspect-ratio:16/9;display:block;border:none;margin:0;padding:0;" alt="${altText}"><span style="display:flex;background-color:#ffffff;line-height:normal;"><span style="width:5px;background:linear-gradient(to bottom, #1a1a2e, #4a3728, #7a2e2e);flex-shrink:0;display:block;"></span><span style="display:block;padding:22px 28px;width:100%;box-sizing:border-box;"><span style="display:block;font-size:20px;font-weight:900;color:#1a1c20;margin-bottom:15px;letter-spacing:-1px;line-height:1.2;">${title}</span><span style="display:flex;flex-wrap:wrap;width:100%;">${rowsHtml}</span></span></span></span>`;
+  // data.imageUrl 은 업로드된 이미지의 base64 data URL
+  return `<span style="display:block;max-width:740px;margin:20px auto;font-family:'Pretendard','Malgun Gothic',sans-serif;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 25px rgba(0,0,0,0.07);border:1px solid #eceff3;box-sizing:border-box;line-height:0;"><img src="${data.imageUrl}" style="width:100%;height:auto;aspect-ratio:16/9;display:block;border:none;margin:0;padding:0;object-fit:cover;" alt="${altText}"><span style="display:flex;background-color:#ffffff;line-height:normal;"><span style="width:5px;background:linear-gradient(to bottom, #1a1a2e, #4a3728, #7a2e2e);flex-shrink:0;display:block;"></span><span style="display:block;padding:22px 28px;width:100%;box-sizing:border-box;"><span style="display:block;font-size:20px;font-weight:900;color:#1a1c20;margin-bottom:15px;letter-spacing:-1px;line-height:1.2;">${title}</span><span style="display:flex;flex-wrap:wrap;width:100%;">${rowsHtml}</span></span></span></span>`;
 }
 
 /* ============================================================
@@ -557,6 +773,7 @@ function buildHtml(data) {
 function getData() {
   const data = {};
   FIELD_IDS.forEach(id => { data[id] = document.getElementById(id).value.trim(); });
+  data.imageUrl = currentImageDataUrl;
   return data;
 }
 
@@ -564,6 +781,10 @@ function generate() {
   const data = getData();
   if (!data.titleMain && !data.titleSub) {
     showToast(I18N[currentLang].toasts.noTitle);
+    return;
+  }
+  if (!data.imageUrl) {
+    showToast(I18N[currentLang].toasts.noImage);
     return;
   }
   const html = buildHtml(data);
@@ -598,6 +819,7 @@ function copyCode() {
 
 function resetForm() {
   FIELD_IDS.forEach(id => { document.getElementById(id).value = ''; });
+  clearImage();
   const preview = document.getElementById('preview');
   preview.innerHTML = '<p style="color:#999;font-size:13px;text-align:center;margin:60px 0;" id="previewEmpty">' + I18N[currentLang].previewEmpty + '</p>';
   document.getElementById('codeOutput').value = '';
@@ -607,38 +829,18 @@ function resetForm() {
 function loadSample() {
   const s = I18N[currentLang].sample;
   FIELD_IDS.forEach(id => {
-    document.getElementById(id).value = s[id] || '';
+    if (s[id] !== undefined) document.getElementById(id).value = s[id];
   });
-  generate();
+  if (currentImageDataUrl) {
+    generate();
+  } else {
+    showToast(I18N[currentLang].toasts.sampleLoaded);
+  }
 }
 
 /* ============================================================
    이미지 다운로드 (740px 폭 고정)
    ============================================================ */
-function blobToDataUrl(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
-async function urlToDataUrl(url) {
-  try {
-    const res = await fetch(url, { mode: 'cors' });
-    if (res.ok) {
-      const blob = await res.blob();
-      return await blobToDataUrl(blob);
-    }
-  } catch (e) { /* fall through */ }
-  const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
-  const res = await fetch(proxyUrl);
-  if (!res.ok) throw new Error('Image fetch failed');
-  const blob = await res.blob();
-  return await blobToDataUrl(blob);
-}
-
 function waitForImageLoad(img) {
   return new Promise((resolve) => {
     if (img.complete && img.naturalWidth > 0) resolve();
@@ -674,15 +876,10 @@ async function downloadImage() {
   document.body.appendChild(container);
 
   try {
+    // 모든 이미지가 로드되었는지 확인 (data URL이므로 즉시 로드되지만 안전하게)
     const images = container.querySelectorAll('img');
     for (const img of images) {
-      try {
-        const dataUrl = await urlToDataUrl(img.src);
-        img.src = dataUrl;
-        await waitForImageLoad(img);
-      } catch (e) {
-        console.warn('Image conversion failed:', img.src, e);
-      }
+      await waitForImageLoad(img);
     }
 
     const canvas = await html2canvas(cardClone, {
@@ -740,6 +937,8 @@ document.addEventListener('keydown', (e) => {
     generate();
   }
 });
+
+setupImageUpload();
 
 try {
   const saved = localStorage.getItem('gameCardLang');
