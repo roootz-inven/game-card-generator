@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>리뷰 카드 생성기</title>
+<!-- html2canvas: 로컬 파일 우선 (CDN 차단된 사내망에서도 동작) -->
+<script src="html2canvas.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+    background: #f5f6f8;
+    color: #1a1c20;
+  }
+  h1 {
+    font-size: 22px;
+    margin: 0 0 6px;
+    letter-spacing: -0.5px;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 24px;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+  @media (max-width: 1100px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+  .panel {
+    background: #fff;
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    border: 1px solid #eceff3;
+  }
+  .panel h2 {
+    font-size: 15px;
+    margin: 0 0 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eceff3;
+    color: #1a1c20;
+  }
+
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #555;
+    margin-bottom: 6px;
+  }
+  .field input,
+  .field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 13px;
+    border: 1px solid #d8dce2;
+    border-radius: 8px;
+    font-family: inherit;
+    background: #fafbfc;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .field input:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: #4a6cf7;
+    background: #fff;
+  }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .hint {
+    font-size: 11px;
+    color: #999;
+    margin-top: 4px;
+  }
+
+  /* 이미지 업로드 */
+  .image-upload-zone {
+    position: relative;
+    border: 2px dashed #d8dce2;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    overflow: hidden;
+    min-height: 140px;
+    background: #fafbfc;
+  }
+  .image-upload-zone:hover { border-color: #4a6cf7; background: #f5f7ff; }
+  .image-upload-zone.dragging { border-color: #4a6cf7; background: #eef3ff; border-style: solid; }
+  .image-upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    text-align: center;
+    pointer-events: none;
+  }
+  .upload-icon { font-size: 32px; margin-bottom: 8px; }
+  .upload-text { font-size: 13px; color: #555; font-weight: 600; }
+  .upload-hint { font-size: 11px; color: #999; margin-top: 4px; line-height: 1.5; }
+  .image-preview-wrapper { position: relative; }
+  .image-preview-wrapper img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 240px;
+    object-fit: contain;
+    background: #f0f2f5;
+  }
+  .image-clear-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    flex: none !important;
+    transition: background 0.15s;
+  }
+  .image-clear-btn:hover { background: rgba(0,0,0,0.9); }
+  .image-info {
+    font-size: 11px;
+    color: #6b7280;
+    padding: 8px 12px;
+    background: #f0f2f5;
+    border-top: 1px solid #e3e6eb;
+  }
+
+  /* 추출된 색상 패널 */
+  .extracted-colors-panel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #f5f6f8;
+    border-radius: 6px;
+    border: 1px solid #e3e6eb;
+  }
+  .ec-label {
+    font-size: 11px;
+    color: #6b7280;
+    font-weight: 700;
+    flex: none;
+  }
+  .ec-swatches {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+  }
+  .ec-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,0,0,0.08);
+    cursor: default;
+  }
+  .btn-extract-colors {
+    flex: none;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #fff;
+    color: #1a1c20;
+    border: 1px solid #d8dce2;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .btn-extract-colors:hover {
+    border-color: #4a6cf7;
+    color: #4a6cf7;
+  }
+  .btn-extract-colors:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* 점수 입력 영역 */
+  .score-input-group {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 10px;
+    align-items: stretch;
+  }
+  .score-input-group input[type="number"] {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 900;
+    color: #1a1c20;
+  }
+
+  /* 점수 방식 토글 */
+  .score-mode-toggle {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    background: #f0f2f5;
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+  .score-mode-btn {
+    flex: 1;
+    padding: 8px 10px;
+    background: transparent;
+    border: none;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b7280;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, color 0.15s;
+  }
+  .score-mode-btn:hover { color: #1a1c20; }
+  .score-mode-btn.active {
+    background: #1a1c20;
+    color: #fff;
+  }
+
+  /* 개구리 선택 옵션 */
+  .frog-options {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .frog-option {
+    border: 2px solid #d8dce2;
+    border-radius: 8px;
+    padding: 8px 4px 6px;
+    cursor: pointer;
+    background: #fafbfc;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .frog-option:hover {
+    border-color: #4a6cf7;
+    background: #fff;
+  }
+  .frog-option.selected {
+    border-color: #1a1c20;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .frog-option > span:first-of-type {
+    /* 이모지 컨테이너 */
+    line-height: 1;
+  }
+  .frog-option-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #888;
+  }
+  .frog-option.selected .frog-option-label {
+    color: #1a1c20;
+  }
+
+  /* 액션 버튼 */
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid #eceff3;
+  }
+  button {
+    flex: 1;
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.05s, background 0.15s;
+  }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-primary { background: #1a1c20; color: #fff; }
+  .btn-primary:hover { background: #2d3138; }
+  .btn-secondary { background: #eceff3; color: #1a1c20; }
+  .btn-secondary:hover { background: #dfe3e8; }
+  .btn-reset {
+    background: #fff;
+    color: #6b7280;
+    border: 1px solid #d8dce2;
+  }
+  .btn-reset:hover { background: #fafbfc; }
+
+  /* 미리보기 영역 */
+  .preview-area {
+    background: #f0f2f5;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+    min-height: 280px;
+    overflow-x: auto;
+  }
+
+  /* 코드 출력 (숨김) */
+  #codeOutput { display: none; }
+
+  /* 다른 도구 링크 배너 */
+  .tool-link-banner {
+    background: linear-gradient(135deg, #eef3ff 0%, #e0f2fe 100%);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 18px;
+    font-size: 12px;
+    color: #1e40af;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .tool-link-banner a {
+    color: #1e40af;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 5px 10px;
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #c7d2fe;
+    transition: background 0.15s;
+  }
+  .tool-link-banner a:hover { background: #f5f9ff; }
+
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #1a1c20;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    z-index: 9999;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<h1>리뷰 카드 생성기</h1>
+<p class="subtitle">정보를 입력하고 "코드 생성"을 누르면 리뷰 카드 HTML이 만들어집니다.</p>
+
+<div class="tool-link-banner">
+  <span>🎮 게임 정보 카드를 만드시려면?</span>
+  <a href="game-card-generator.html">→ 게임 정보 카드 생성기</a>
+</div>
+
+<div class="layout">
+  <!-- 입력 패널 -->
+  <div class="panel">
+    <h2>📝 리뷰 정보 입력</h2>
+
+    <!-- 이미지 업로드 -->
+    <div class="field">
+      <label>📷 제품 이미지</label>
+      <div class="image-upload-zone" id="imageDropZone">
+        <input type="file" id="imageFile" accept="image/*" style="display:none;">
+        <div class="image-upload-content" id="imageUploadContent">
+          <div class="upload-icon">📤</div>
+          <div class="upload-text">클릭해서 파일 선택 또는 여기로 드래그</div>
+          <div class="upload-hint">PNG, JPG, GIF · 클립보드에서 Ctrl+V로 붙여넣기도 가능</div>
+        </div>
+        <div class="image-preview-wrapper" id="imagePreviewWrapper" style="display:none;">
+          <img id="imagePreview" alt="">
+          <button type="button" class="image-clear-btn" onclick="clearImage(event)">×</button>
+          <div class="image-info" id="imageInfo"></div>
+        </div>
+      </div>
+
+      <!-- 추출된 색상 표시 + 다시 추출 버튼 -->
+      <div class="extracted-colors-panel">
+        <span class="ec-label">🎨 추출된 색상</span>
+        <div class="ec-swatches" id="ecSwatches"></div>
+        <button type="button" class="btn-extract-colors" onclick="reExtractColors()">다시 추출</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>🏷️ 한글명</label>
+      <input type="text" id="titleKr" placeholder="예: 프라그마타">
+    </div>
+
+    <div class="field">
+      <label>✨ 핵심 요약 문구</label>
+      <input type="text" id="tagline" placeholder="예: 완성도 높은 비주얼과 탄탄한 게임플레이의 정점">
+    </div>
+
+    <div class="field">
+      <label>🏷️ CATEGORY</label>
+      <input type="text" id="category" placeholder="예: ACTION ADVENTURE">
+    </div>
+
+    <div class="field">
+      <label>⭐ 점수 방식</label>
+      <div class="score-mode-toggle">
+        <button type="button" class="score-mode-btn active" data-mode="number" onclick="setScoreMode('number')">🔢 숫자 점수</button>
+        <button type="button" class="score-mode-btn" data-mode="frog" onclick="setScoreMode('frog')">🐸 개구리 점수</button>
+      </div>
+
+      <div id="numberScoreArea">
+        <div class="score-input-group">
+          <input type="number" id="score" min="0" max="10" step="0.1" oninput="onScoreChange()">
+          <input type="text" id="scoreLabel" placeholder="자동: AMAZING / GREAT / GOOD ...">
+        </div>
+        <div class="hint">왼쪽은 점수(0.0~10.0), 오른쪽은 평가 라벨 (자동 추천)</div>
+      </div>
+
+      <div id="frogScoreArea" style="display:none;">
+        <div class="frog-options" id="frogOptions"></div>
+        <div class="hint">점수 매기기 애매한 경우 표정으로 평가</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>👍 좋은점</label>
+        <textarea id="pros" rows="4" placeholder="한 줄에 하나씩 입력&#10;예:&#10;뛰어난 비주얼&#10;탄탄한 건플레이"></textarea>
+      </div>
+      <div class="field">
+        <label>👎 아쉬운점</label>
+        <textarea id="cons" rows="4" placeholder="한 줄에 하나씩 입력&#10;예:&#10;아쉬운 적 캐릭터"></textarea>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>🏷️ 제품명 / 모델명</label>
+      <input type="text" id="modelName" placeholder="예: PRAGMATA Standard Edition">
+    </div>
+
+    <div class="field">
+      <label>🏢 제조사 / 브랜드</label>
+      <input type="text" id="manufacturer" placeholder="예: CAPCOM">
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>📅 출시일</label>
+        <input type="text" id="releasedOn" placeholder="예: 2026년 4월 17일">
+      </div>
+      <div class="field">
+        <label>💰 가격</label>
+        <input type="text" id="price" placeholder="예: 79,800원">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-reset" onclick="resetForm()">초기화</button>
+      <button class="btn-secondary" onclick="loadSample()">예시 채우기</button>
+      <button class="btn-primary" onclick="generate()">코드 생성</button>
+    </div>
+  </div>
+
+  <!-- 결과 패널 -->
+  <div class="panel">
+    <h2>👀 미리보기</h2>
+    <div class="preview-area" id="preview">
+      <p style="color:#999;font-size:13px;text-align:center;margin:80px 0;">좌측에 정보를 입력한 후 "코드 생성"을 눌러주세요.</p>
+    </div>
+
+    <textarea id="codeOutput" readonly></textarea>
+
+    <div class="actions">
+      <button class="btn-secondary" id="btn-download" onclick="downloadImage()">🖼️ 이미지 다운로드</button>
+      <button class="btn-primary" onclick="copyCode()">📋 코드 복사</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   상수 / 상태
+   ============================================================ */
+const FIELD_IDS = ['titleKr','tagline','category','score','scoreLabel','pros','cons','modelName','manufacturer','releasedOn','price'];
+
+const SAMPLE = {
+  titleKr: '엑스지미 호라이즌 20 MAX',
+  tagline: '현존하는 최강 빔프로젝트',
+  category: '홈시네마',
+  score: '9.0',
+  scoreLabel: 'AMAZING',
+  pros: '압도적인 4K 화질\n뛰어난 명암비\n조용한 팬 소음\n간편한 자동 키스톤 보정',
+  cons: '부담스러운 가격',
+  modelName: 'iPhone / iPhone 17 Pro',
+  manufacturer: 'Apple',
+  releasedOn: '2026년 00월 00일',
+  price: '4,500,000원'
+};
+
+let currentImageDataUrl = '';
+let currentImageWidth = 0;
+let currentImageHeight = 0;
+
+const MAX_IMAGE_WIDTH = 1480;
+const IMAGE_QUALITY = 0.85;
+const TARGET_WIDTH = 740;
+
+// 이미지에서 추출한 색상 (그라데이션 보더용) - 기본값은 따뜻한 톤
+let extractedColors = ['#c0392b', '#d4682b', '#e67e22'];
+
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map(x => Math.max(0, Math.min(255, x)).toString(16).padStart(2, '0')).join('');
+}
+
+// 추출된 색상 스와치 UI 렌더링
+function renderExtractedColors() {
+  const container = document.getElementById('ecSwatches');
+  if (!container) return;
+  container.innerHTML = '';
+  extractedColors.forEach(color => {
+    const sw = document.createElement('div');
+    sw.className = 'ec-swatch';
+    sw.style.background = color;
+    sw.title = color;
+    container.appendChild(sw);
+  });
+}
+
+// 수동 재추출: 이미 페이지에 로드된 미리보기 img를 직접 사용
+function reExtractColors() {
+  if (!currentImageDataUrl) {
+    showToast('먼저 이미지를 업로드해주세요.');
+    return;
+  }
+  const previewImg = document.getElementById('imagePreview');
+  if (!previewImg || !previewImg.complete || previewImg.naturalWidth === 0) {
+    showToast('이미지가 아직 로드 중입니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
+  const ok = extractColorsFromImage(previewImg);
+  if (ok) {
+    renderExtractedColors();
+    if (document.getElementById('codeOutput').value) generate();
+    showToast('🎨 색상 추출 완료: ' + extractedColors.join(', '));
+  } else {
+    showToast('색상 추출에 실패했습니다 (콘솔 확인)');
+  }
+}
+
+// 동기 추출: 이미 로드된 img 엘리먼트를 받아서 자체 양자화로 주요 색상 3개 추출
+// (ColorThief 의존 제거, 캔버스만 사용)
+function extractColorsFromImage(sourceImg) {
+  if (!sourceImg) {
+    console.warn('[ColorExtract] 소스 이미지 없음');
+    return false;
+  }
+  if (!sourceImg.complete || sourceImg.naturalWidth === 0) {
+    console.warn('[ColorExtract] 이미지 미로드 (complete=' + sourceImg.complete + ', w=' + sourceImg.naturalWidth + ')');
+    return false;
+  }
+
+  try {
+    // 1) 작은 캔버스에 그려서 픽셀 처리 부하 줄이기
+    const canvas = document.createElement('canvas');
+    const w = sourceImg.naturalWidth;
+    const h = sourceImg.naturalHeight;
+    const maxDim = 150;
+    const scale = Math.min(1, maxDim / Math.max(w, h));
+    canvas.width = Math.max(1, Math.floor(w * scale));
+    canvas.height = Math.max(1, Math.floor(h * scale));
+
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(sourceImg, 0, 0, canvas.width, canvas.height);
+
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const pixels = imgData.data;
+    console.log('[ColorExtract] 픽셀 수:', pixels.length / 4);
+
+    // 2) 색상 양자화: 각 채널을 6단계로 나눠 6x6x6 = 216 버킷에 분류
+    const buckets = {};
+    const sampleStep = 4; // 4픽셀마다 1개 샘플링 (속도)
+    for (let i = 0; i < pixels.length; i += 4 * sampleStep) {
+      const r = pixels[i];
+      const g = pixels[i + 1];
+      const b = pixels[i + 2];
+      const a = pixels[i + 3];
+      if (a < 128) continue;
+
+      // 매우 어둡거나 매우 밝은(흰색에 가까운) 픽셀은 가중치 낮추기
+      // (배경이 흰색/검정인 경우 그라데이션이 무채색으로 묻히는 것 방지)
+      const luma = (r + g + b) / 3;
+      const weight = (luma < 20 || luma > 240) ? 0.3 : 1.0;
+
+      const qr = Math.floor(r / 43); // 0-5
+      const qg = Math.floor(g / 43);
+      const qb = Math.floor(b / 43);
+      const key = qr + ',' + qg + ',' + qb;
+
+      if (!buckets[key]) {
+        buckets[key] = { count: 0, r: 0, g: 0, b: 0 };
+      }
+      buckets[key].count += weight;
+      buckets[key].r += r * weight;
+      buckets[key].g += g * weight;
+      buckets[key].b += b * weight;
+    }
+
+    const sorted = Object.values(buckets).sort((a, b) => b.count - a.count);
+    if (sorted.length === 0) {
+      console.warn('[ColorExtract] 버킷 비어있음');
+      return false;
+    }
+
+    // 3) 상위 N개 버킷의 평균 색상 추출
+    const top = sorted.slice(0, 3).map(b => [
+      Math.round(b.r / b.count),
+      Math.round(b.g / b.count),
+      Math.round(b.b / b.count)
+    ]);
+
+    // 부족하면 마지막 색상 복제
+    while (top.length < 3) {
+      top.push(top[top.length - 1].slice());
+    }
+
+    // 4) 밝기 순 정렬 (어두운→밝은) - 그라데이션 자연스럽게
+    const finalSorted = top
+      .map(rgb => ({ rgb, brightness: (rgb[0]*299 + rgb[1]*587 + rgb[2]*114) / 1000 }))
+      .sort((a, b) => a.brightness - b.brightness)
+      .map(o => o.rgb);
+
+    extractedColors = finalSorted.map(rgb => rgbToHex(rgb[0], rgb[1], rgb[2]));
+    console.log('[ColorExtract] 성공:', extractedColors);
+    return true;
+  } catch (e) {
+    console.error('[ColorExtract] 예외:', e);
+    return false;
+  }
+}
+
+// 점수 모드 & 개구리 표정 (5단계)
+let scoreMode = 'number';   // 'number' | 'frog'
+let selectedFrog = null;    // 'best' | 'good' | 'meh' | 'bad' | 'worst'
+
+const FROG_LEVELS = [
+  { id: 'best',  label: 'BEST',  color: '#2ecc71', emoji: '🤩' },
+  { id: 'good',  label: 'GOOD',  color: '#a4d65e', emoji: '😊' },
+  { id: 'meh',   label: 'OKAY',  color: '#f1c40f', emoji: '😐' },
+  { id: 'bad',   label: 'BAD',   color: '#f39c12', emoji: '😞' },
+  { id: 'worst', label: 'WORST', color: '#e74c3c', emoji: '😭' }
+];
+
+function frogSvg(levelId, size) {
+  const data = FROG_LEVELS.find(p => p.id === levelId);
+  if (!data) return '';
+  // 이모지를 텍스트로 렌더링 (font-size로 크기 제어)
+  const fontSize = size || 48;
+  return `<span style="font-size:${fontSize}px;line-height:1;display:block;text-align:center;font-family:'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif;">${data.emoji}</span>`;
+}
+
+/* ============================================================
+   이미지 업로드
+   ============================================================ */
+function handleImageFile(file) {
+  if (!file || !file.type || !file.type.startsWith('image/')) {
+    showToast('이미지 파일만 업로드 가능합니다.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > MAX_IMAGE_WIDTH) {
+        height = Math.round(height * (MAX_IMAGE_WIDTH / width));
+        width = MAX_IMAGE_WIDTH;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', IMAGE_QUALITY);
+      currentImageDataUrl = dataUrl;
+      currentImageWidth = width;
+      currentImageHeight = height;
+      document.getElementById('imagePreview').src = dataUrl;
+      document.getElementById('imagePreviewWrapper').style.display = 'block';
+      document.getElementById('imageUploadContent').style.display = 'none';
+      updateImageInfo();
+
+      // 색상 추출 (이미 로드된 img를 동기로 처리)
+      const extracted = extractColorsFromImage(img);
+      renderExtractedColors();
+      if (extracted) {
+        showToast('✅ 이미지 업로드 완료 · 색상 ' + extractedColors.length + '개 추출됨');
+      } else {
+        showToast('✅ 이미지 업로드 완료 (색상 추출 실패, 기본 색상 사용)');
+      }
+
+      if (document.getElementById('codeOutput').value) generate();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateImageInfo() {
+  const sizeKb = Math.round(currentImageDataUrl.length * 3 / 4 / 1024);
+  document.getElementById('imageInfo').textContent =
+    currentImageWidth + '×' + currentImageHeight + 'px · ' + sizeKb + 'KB (자동 리사이즈 적용)';
+}
+
+function clearImage(event) {
+  if (event) event.stopPropagation();
+  currentImageDataUrl = '';
+  currentImageWidth = 0;
+  currentImageHeight = 0;
+  document.getElementById('imageFile').value = '';
+  document.getElementById('imagePreview').src = '';
+  document.getElementById('imagePreviewWrapper').style.display = 'none';
+  document.getElementById('imageUploadContent').style.display = '';
+  // 추출 색상도 기본값으로 복원
+  extractedColors = ['#c0392b', '#d4682b', '#e67e22'];
+  renderExtractedColors();
+}
+
+function setupImageUpload() {
+  const dropZone = document.getElementById('imageDropZone');
+  const fileInput = document.getElementById('imageFile');
+  dropZone.addEventListener('click', (e) => {
+    if (e.target.classList && e.target.classList.contains('image-clear-btn')) return;
+    fileInput.click();
+  });
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files[0]) handleImageFile(e.target.files[0]);
+  });
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragging');
+  });
+  dropZone.addEventListener('dragleave', (e) => {
+    if (e.target === dropZone) dropZone.classList.remove('dragging');
+  });
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragging');
+    const file = e.dataTransfer.files[0];
+    if (file) handleImageFile(file);
+  });
+  document.addEventListener('paste', (e) => {
+    if (!e.clipboardData) return;
+    for (const item of e.clipboardData.items) {
+      if (item.type && item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) handleImageFile(file);
+        break;
+      }
+    }
+  });
+}
+
+/* ============================================================
+   점수 → 라벨/색상 매핑
+   ============================================================ */
+const AUTO_LABELS = ['AMAZING', 'GREAT', 'GOOD', 'OKAY', 'MIXED', 'BAD', 'AWFUL'];
+
+function suggestScoreLabel(score) {
+  if (isNaN(score)) return '';
+  if (score >= 9.0) return 'AMAZING';
+  if (score >= 8.0) return 'GREAT';
+  if (score >= 7.0) return 'GOOD';
+  if (score >= 6.0) return 'OKAY';
+  if (score >= 5.0) return 'MIXED';
+  if (score >= 3.0) return 'BAD';
+  return 'AWFUL';
+}
+
+function scoreColor(score) {
+  if (isNaN(score)) return '#888';
+  // 첨부 이미지 톤(딥 오렌지-레드 계열)으로 통일
+  if (score >= 9.0) return '#c0392b';   // 진한 적색 (AMAZING)
+  if (score >= 8.0) return '#d44a30';   // 적-오렌지 (GREAT)
+  if (score >= 7.0) return '#e67e22';   // 오렌지 (GOOD)
+  if (score >= 5.0) return '#f1c40f';   // 노랑 (OKAY/MIXED)
+  if (score >= 3.0) return '#95a5a6';   // 그레이 (BAD)
+  return '#7f8c8d';                     // 다크 그레이 (AWFUL)
+}
+
+function onScoreChange() {
+  const score = parseFloat(document.getElementById('score').value);
+  const labelField = document.getElementById('scoreLabel');
+  const currentLabel = labelField.value.trim().toUpperCase();
+  // 비어있거나 자동 라벨 중 하나면 새 점수에 맞춰 갱신
+  // 사용자가 다른 텍스트(예: "최고예요!")를 직접 적었으면 그대로 유지
+  if (!currentLabel || AUTO_LABELS.includes(currentLabel)) {
+    labelField.value = suggestScoreLabel(score);
+  }
+  if (document.getElementById('codeOutput').value) generate();
+}
+
+/* ============================================================
+   점수 모드 (숫자 / 개구리)
+   ============================================================ */
+function setScoreMode(mode) {
+  scoreMode = mode;
+  document.querySelectorAll('.score-mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+  document.getElementById('numberScoreArea').style.display = mode === 'number' ? '' : 'none';
+  document.getElementById('frogScoreArea').style.display = mode === 'frog' ? '' : 'none';
+  if (document.getElementById('codeOutput').value) generate();
+}
+
+function selectFrog(level) {
+  selectedFrog = level;
+  document.querySelectorAll('.frog-option').forEach(opt => {
+    opt.classList.toggle('selected', opt.dataset.frog === level);
+  });
+  if (document.getElementById('codeOutput').value) generate();
+}
+
+function renderFrogOptions() {
+  const container = document.getElementById('frogOptions');
+  if (!container) return;
+  container.innerHTML = '';
+  FROG_LEVELS.forEach(level => {
+    const opt = document.createElement('div');
+    opt.className = 'frog-option';
+    opt.dataset.frog = level.id;
+    opt.addEventListener('click', () => selectFrog(level.id));
+    opt.innerHTML = frogSvg(level.id, '') + `<div class="frog-option-label">${level.label}</div>`;
+    container.appendChild(opt);
+  });
+}
+
+/* ============================================================
+   카드 HTML 생성 (740px 폭 최적화)
+   ============================================================ */
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function parseList(text) {
+  if (!text) return [];
+  return text.split(/\n/).map(s => s.trim()).filter(s => s.length > 0);
+}
+
+function buildReviewCardHtml(data) {
+  const scoreNum = parseFloat(data.score);
+  const scoreFmt = isNaN(scoreNum) ? '0.0' : (Math.round(scoreNum * 10) / 10).toFixed(1);
+  const sc = scoreColor(scoreNum);
+  const verdict = (data.scoreLabel || suggestScoreLabel(scoreNum)).trim();
+
+  // SVG 원형 점수 차트 - r=58, c=2*π*58 ≈ 364.42
+  const radius = 58;
+  const circumference = 2 * Math.PI * radius;
+  const filled = isNaN(scoreNum) ? 0 : Math.max(0, Math.min(1, scoreNum / 10));
+  const dashoffset = circumference * (1 - filled);
+
+  const prosArr = parseList(data.pros);
+  const consArr = parseList(data.cons);
+
+  const prosHtml = prosArr.map((item, idx) => {
+    const isLast = idx === prosArr.length - 1;
+    const borderStyle = isLast ? '' : 'border-bottom:1px solid #1f1f1f;';
+    return `<span style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;${borderStyle}"><span style="color:#2ecc71;font-size:17px;font-weight:900;width:14px;text-align:center;flex-shrink:0;line-height:1.3;">+</span><span style="color:#fff;font-size:12.5px;font-weight:500;line-height:1.4;">${escapeHtml(item)}</span></span>`;
+  }).join('');
+
+  const consHtml = consArr.map((item, idx) => {
+    const isLast = idx === consArr.length - 1;
+    const borderStyle = isLast ? '' : 'border-bottom:1px solid #1f1f1f;';
+    return `<span style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;${borderStyle}"><span style="color:#ff3b5c;font-size:19px;font-weight:900;width:14px;text-align:center;flex-shrink:0;line-height:1.3;">−</span><span style="color:#fff;font-size:12.5px;font-weight:500;line-height:1.4;">${escapeHtml(item)}</span></span>`;
+  }).join('');
+
+  const prosSection = prosArr.length > 0
+    ? `<span style="display:block;margin-bottom:14px;"><span style="display:block;color:#2ecc71;font-size:13px;font-weight:900;letter-spacing:0.5px;margin-bottom:2px;">좋은점</span><span style="display:block;">${prosHtml}</span></span>`
+    : '';
+
+  const consSection = consArr.length > 0
+    ? `<span style="display:block;"><span style="display:block;color:#ff3b5c;font-size:13px;font-weight:900;letter-spacing:0.5px;margin-bottom:2px;">아쉬운점</span><span style="display:block;">${consHtml}</span></span>`
+    : '';
+
+  // 한글명 + 핵심 요약 문구 헤더
+  const titleKr = escapeHtml(data.titleKr);
+  const tagline = escapeHtml(data.tagline);
+  let titleBlock = '';
+  if (titleKr && tagline) {
+    titleBlock = `<span style="display:block;font-size:26px;font-weight:900;color:#ffffff;letter-spacing:-1px;line-height:1.1;">${titleKr}</span><span style="display:block;font-size:13px;font-weight:600;color:#aaa;margin-top:7px;letter-spacing:0;line-height:1.4;">${tagline}</span>`;
+  } else if (titleKr) {
+    titleBlock = `<span style="display:block;font-size:26px;font-weight:900;color:#ffffff;letter-spacing:-1px;line-height:1.1;">${titleKr}</span>`;
+  } else {
+    titleBlock = `<span style="display:block;font-size:26px;font-weight:900;color:#888;letter-spacing:-1px;">제품명</span>`;
+  }
+
+  const categoryBlock = data.category
+    ? `<span style="text-align:right;flex-shrink:0;"><span style="display:block;color:#888;font-size:9px;letter-spacing:2.5px;font-weight:700;margin-bottom:5px;">CATEGORY</span><span style="display:block;font-size:13px;font-weight:900;letter-spacing:1px;color:#fff;">${escapeHtml(data.category)}</span></span>`
+    : '';
+
+  // 하단 정보 4셀 (이모지 포함)
+  const infoRows = [
+    { label: '📦 제품명 / 모델명',  value: escapeHtml(data.modelName) || '-'    },
+    { label: '🏢 제조사 / 브랜드',  value: escapeHtml(data.manufacturer) || '-' },
+    { label: '📅 출시일',           value: escapeHtml(data.releasedOn) || '-'   },
+    { label: '💰 가격',             value: escapeHtml(data.price) || '-'        }
+  ];
+
+  const infoCells = infoRows.map(r =>
+    `<span style="display:flex;flex-direction:column;gap:5px;padding:13px 16px;border-top:1.5px dotted rgba(255,255,255,0.18);background:transparent;"><span style="font-size:10px;color:#888;font-weight:700;letter-spacing:1.5px;">${r.label}</span><span style="font-size:13px;color:#fff;font-weight:700;line-height:1.4;">${r.value}</span></span>`
+  ).join('');
+
+  return `<span style="display:block;max-width:740px;margin:20px auto;font-family:'Pretendard','Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:linear-gradient(135deg, #0e1a2e 0%, #0a0e1a 50%, #0a1422 100%);color:#ffffff;border-radius:12px;overflow:hidden;line-height:1;box-sizing:border-box;border:1px solid #1f2937;">
+
+<!-- 상단 헤더: 한글명 + 핵심 요약 문구 + CATEGORY -->
+<span style="display:flex;justify-content:space-between;align-items:flex-start;padding:22px 26px 18px 26px;gap:14px;">
+  <span style="flex:1;min-width:0;">${titleBlock}</span>
+  ${categoryBlock}
+</span>
+
+<!-- 메인 그리드: 이미지 | PROS/CONS | 점수 -->
+<span style="display:flex;gap:16px;padding:0 26px 22px 26px;align-items:flex-start;">
+
+  <!-- 표지 이미지 (옆 좋은점/아쉬운점 높이에 맞춰 stretch, 필요 시 크롭) - 그라데이션 보더 -->
+  <span style="flex:0 0 140px;align-self:stretch;display:flex;padding:3px;background:linear-gradient(135deg, ${extractedColors.join(', ')});border-radius:7px;min-height:140px;box-sizing:border-box;">
+    <span style="display:block;flex:1;position:relative;border-radius:4px;overflow:hidden;background:#222;">
+      <img src="${data.imageUrl}" alt="${titleKr || '제품 이미지'}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;">
+    </span>
+  </span>
+
+  <!-- PROS / CONS -->
+  <span style="flex:1;display:block;min-width:0;">
+    ${prosSection}
+    ${consSection}
+  </span>
+
+  <!-- 점수 (숫자 또는 개구리) -->
+  ${data.scoreMode === 'frog' && data.selectedFrog ? (() => {
+    const frog = FROG_LEVELS.find(f => f.id === data.selectedFrog);
+    return `<span style="flex:0 0 140px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      ${frogSvg(data.selectedFrog, 130)}
+      <span style="display:block;margin-top:10px;font-size:16px;font-weight:900;letter-spacing:3px;color:${frog.color};">${frog.label}</span>
+    </span>`;
+  })() : `<span style="flex:0 0 140px;text-align:center;display:flex;flex-direction:column;align-items:center;">
+    <svg width="140" height="140" viewBox="0 0 140 140" style="display:block;">
+      <defs>
+        <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="${extractedColors[0]}"/>
+          <stop offset="50%" stop-color="${extractedColors[1] || extractedColors[0]}"/>
+          <stop offset="100%" stop-color="${extractedColors[extractedColors.length - 1]}"/>
+        </linearGradient>
+      </defs>
+      <circle cx="70" cy="70" r="${radius}" stroke="#1f1f1f" stroke-width="11" fill="none"/>
+      <circle cx="70" cy="70" r="${radius}" stroke="url(#scoreGrad)" stroke-width="11" fill="none"
+              stroke-dasharray="${circumference.toFixed(2)}" stroke-dashoffset="${dashoffset.toFixed(2)}"
+              stroke-linecap="round"
+              transform="rotate(-90 70 70)"/>
+      <text x="70" y="73" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="34" font-weight="900" fill="#ffffff" dominant-baseline="middle">${scoreFmt}</text>
+      <text x="70" y="96" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="8" font-weight="700" fill="#888" letter-spacing="1.5">/ 10</text>
+    </svg>
+    <span style="display:block;margin-top:8px;font-size:14px;font-weight:900;letter-spacing:2.5px;color:${sc};">${escapeHtml(verdict)}</span>
+  </span>`}
+
+</span>
+
+<!-- 하단 정보 그리드 (2x2) -->
+<span style="display:grid;grid-template-columns:1fr 1fr;">
+  ${infoCells}
+</span>
+
+</span>`;
+}
+
+/* ============================================================
+   입력 / 생성 / 복사 / 초기화
+   ============================================================ */
+function getData() {
+  const data = {};
+  FIELD_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    data[id] = el ? el.value.trim() : '';
+  });
+  data.imageUrl = currentImageDataUrl;
+  data.scoreMode = scoreMode;
+  data.selectedFrog = selectedFrog;
+  return data;
+}
+
+function generate() {
+  const data = getData();
+  if (!data.imageUrl) {
+    showToast('제품 이미지를 업로드해주세요.');
+    return;
+  }
+  if (!data.titleKr) {
+    showToast('한글명을 입력해주세요.');
+    return;
+  }
+  if (data.scoreMode === 'number') {
+    if (data.score === '' || isNaN(parseFloat(data.score))) {
+      showToast('점수를 입력해주세요 (0.0 - 10.0).');
+      return;
+    }
+  } else {
+    if (!data.selectedFrog) {
+      showToast('개구리 표정을 선택해주세요.');
+      return;
+    }
+  }
+  const html = buildReviewCardHtml(data);
+  document.getElementById('preview').innerHTML = html;
+  document.getElementById('codeOutput').value = html;
+  showToast('✅ 리뷰 카드가 생성되었습니다!');
+}
+
+function copyCode() {
+  const code = document.getElementById('codeOutput').value;
+  if (!code) {
+    showToast('먼저 코드를 생성해주세요.');
+    return;
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(() => {
+      showToast('📋 클립보드에 복사되었습니다!');
+    }).catch(() => fallbackCopy(code));
+    return;
+  }
+  fallbackCopy(code);
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try {
+    const ok = document.execCommand('copy');
+    showToast(ok ? '📋 클립보드에 복사되었습니다!' : '복사 실패. 직접 선택해서 복사해주세요.');
+  } catch (e) {
+    showToast('복사 실패. 직접 선택해서 복사해주세요.');
+  } finally {
+    document.body.removeChild(ta);
+  }
+}
+
+function resetForm() {
+  FIELD_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  clearImage();
+  // 점수 모드와 개구리 선택도 초기화
+  selectedFrog = null;
+  document.querySelectorAll('.frog-option').forEach(opt => opt.classList.remove('selected'));
+  setScoreMode('number');
+  // 점수 기본값 9 복원
+  document.getElementById('score').value = '9';
+  onScoreChange();
+  document.getElementById('preview').innerHTML = '<p style="color:#999;font-size:13px;text-align:center;margin:80px 0;">좌측에 정보를 입력한 후 "코드 생성"을 눌러주세요.</p>';
+  document.getElementById('codeOutput').value = '';
+  showToast('초기화되었습니다.');
+}
+
+function loadSample() {
+  FIELD_IDS.forEach(id => {
+    if (SAMPLE[id] !== undefined) {
+      document.getElementById(id).value = SAMPLE[id];
+    }
+  });
+  showToast('✅ 예시가 채워졌습니다');
+  if (currentImageDataUrl) generate();
+}
+
+/* ============================================================
+   이미지 다운로드 (740px 폭 고정)
+   ============================================================ */
+function waitForImageLoad(img) {
+  return new Promise((resolve) => {
+    if (img.complete && img.naturalWidth > 0) resolve();
+    else { img.onload = resolve; img.onerror = resolve; }
+  });
+}
+
+// html2canvas가 정의되어 있는지 확인하고, 없으면 여러 CDN을 순차적으로 시도해 동적 로드
+async function loadHtml2canvas() {
+  if (typeof html2canvas !== 'undefined') return true;
+  const urls = [
+    'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+    'https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js'
+  ];
+  for (const url of urls) {
+    try {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = url;
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('script error'));
+        // 10초 타임아웃
+        const timer = setTimeout(() => reject(new Error('timeout')), 10000);
+        s.onload = () => { clearTimeout(timer); resolve(); };
+        document.head.appendChild(s);
+      });
+      if (typeof html2canvas !== 'undefined') {
+        console.log('[Download] html2canvas loaded from:', url);
+        return true;
+      }
+    } catch (e) {
+      console.warn('[Download] CDN 실패:', url, e.message);
+    }
+  }
+  return false;
+}
+
+async function downloadImage() {
+  const preview = document.getElementById('preview');
+  const originalCard = preview.querySelector('span');
+  if (!originalCard) {
+    showToast('먼저 "코드 생성"을 눌러주세요.');
+    return;
+  }
+  const btn = document.getElementById('btn-download');
+  const originalBtnText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ 변환 중...';
+
+  // html2canvas 라이브러리가 없으면 동적 로드 시도
+  if (typeof html2canvas === 'undefined') {
+    btn.textContent = '⏳ 라이브러리 로딩...';
+    showToast('🔄 html2canvas 라이브러리 로딩 중...');
+    const loaded = await loadHtml2canvas();
+    if (!loaded) {
+      btn.disabled = false;
+      btn.textContent = originalBtnText;
+      showToast('❌ html2canvas 로드 실패. 인터넷 연결 또는 방화벽을 확인 후 새로고침해주세요.');
+      return;
+    }
+  }
+
+  showToast('이미지 변환 중...');
+
+  const container = document.createElement('div');
+  container.style.cssText =
+    'position:fixed;left:-10000px;top:0;width:' + TARGET_WIDTH + 'px;' +
+    'background:#0a0a0a;padding:0;margin:0;z-index:-1;';
+  const cardClone = originalCard.cloneNode(true);
+  cardClone.style.maxWidth = TARGET_WIDTH + 'px';
+  cardClone.style.width = TARGET_WIDTH + 'px';
+  cardClone.style.margin = '0';
+  container.appendChild(cardClone);
+  document.body.appendChild(container);
+
+  try {
+    const images = container.querySelectorAll('img');
+    for (const img of images) {
+      await waitForImageLoad(img);
+    }
+
+    // html2canvas는 SVG <linearGradient> 참조(stroke="url(#...)")를 잘 처리하지 못함
+    // → 단색으로 치환 (다운로드 PNG에만 적용, 미리보기는 그라데이션 유지)
+    const gradientCircles = cardClone.querySelectorAll('circle');
+    const fallbackColor = extractedColors[Math.floor(extractedColors.length / 2)] || extractedColors[0] || '#c0392b';
+    gradientCircles.forEach(c => {
+      const stroke = c.getAttribute('stroke') || '';
+      if (stroke.indexOf('url(') === 0) {
+        c.setAttribute('stroke', fallbackColor);
+      }
+    });
+    // defs 내부 linearGradient는 더 이상 참조되지 않으므로 제거
+    const defsToRemove = cardClone.querySelectorAll('defs');
+    defsToRemove.forEach(d => d.remove());
+
+    const canvas = await html2canvas(cardClone, {
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: '#0a0a0a',
+      width: TARGET_WIDTH,
+      windowWidth: TARGET_WIDTH,
+      scale: 1,
+      logging: false
+    });
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const titleKr = document.getElementById('titleKr').value.trim();
+      const filename = (titleKr || 'review-card').replace(/[\\/:*?"<>|]/g, '_');
+      a.href = url;
+      a.download = filename + '-review.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('✅ 다운로드 완료! (' + canvas.width + '×' + canvas.height + 'px)');
+    }, 'image/png');
+  } catch (e) {
+    console.error('[Download] 실패:', e);
+    if (e && e.stack) console.error('[Download] 스택:', e.stack);
+    showToast('❌ 이미지 생성 실패: ' + (e && e.message ? e.message : (e && e.toString ? e.toString() : 'unknown')));
+  } finally {
+    if (container.parentNode) container.parentNode.removeChild(container);
+    btn.disabled = false;
+    btn.textContent = originalBtnText;
+  }
+}
+
+/* ============================================================
+   토스트
+   ============================================================ */
+let toastTimer;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+/* ============================================================
+   초기화
+   ============================================================ */
+setupImageUpload();
+
+// 점수 라벨을 직접 수정하면 미리보기 재생성
+document.getElementById('scoreLabel').addEventListener('input', () => {
+  if (document.getElementById('codeOutput').value) generate();
+});
+
+// 개구리 옵션 5종 렌더링
+renderFrogOptions();
+
+// 추출된 색상 스와치 초기 렌더링 (기본값 표시)
+renderExtractedColors();
+
+// 점수 기본값 9 설정 + 자동 라벨 채우기
+document.getElementById('score').value = '9';
+onScoreChange();
+</script>
+
+</body>
+</html>

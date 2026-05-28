@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>게임 정보 카드 생성기 / Game Info Card Generator</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- html2canvas: 로컬 우선, 없으면 CDN -->
+<script src="html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
 <style>
   * { box-sizing: border-box; }
@@ -25,6 +26,33 @@
     color: #6b7280;
     margin-bottom: 24px;
   }
+  /* 다른 도구 링크 배너 */
+  .tool-link-banner {
+    background: linear-gradient(135deg, #f3e8ff 0%, #fce7f3 100%);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 18px;
+    font-size: 12px;
+    color: #6b21a8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    max-width: 1600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .tool-link-banner a {
+    color: #6b21a8;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 5px 10px;
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #e9d5ff;
+    transition: background 0.15s;
+  }
+  .tool-link-banner a:hover { background: #faf5ff; }
   .layout {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -485,6 +513,11 @@
 
 <h1 id="pageTitle">게임 정보 카드 생성기</h1>
 <p class="subtitle" id="pageSubtitle">정보를 입력하고 "코드 생성"을 누르면 HTML 코드가 만들어집니다. 우측에서 미리보기와 코드 복사가 가능합니다.</p>
+
+<div class="tool-link-banner">
+  <span>⭐ 리뷰 카드(점수 + 좋은점/아쉬운점)를 만드시려면?</span>
+  <a href="review-card-generator.html">→ 리뷰 카드 생성기</a>
+</div>
 
 <div class="layout">
   <!-- 입력 패널 -->
