@@ -140,11 +140,13 @@
   }
   .image-clear-btn:hover { background: rgba(0,0,0,0.9); }
   .image-info {
-    font-size: 11px;
-    color: #6b7280;
-    padding: 8px 12px;
-    background: #f0f2f5;
+    font-size: 12px;
+    color: #1a1c20;
+    font-weight: 600;
+    padding: 10px 14px;
+    background: #fff;
     border-top: 1px solid #e3e6eb;
+    letter-spacing: -0.2px;
   }
 
   /* 배경 테마 선택 */
@@ -692,6 +694,8 @@ let infoItems = DEFAULT_INFO_ITEMS.map(o => ({ emoji: o.emoji, label: o.label, v
 let currentImageDataUrl = '';
 let currentImageWidth = 0;
 let currentImageHeight = 0;
+let currentImageOriginalWidth = 0;
+let currentImageOriginalHeight = 0;
 
 const MAX_IMAGE_WIDTH = 1480;
 const IMAGE_QUALITY = 0.85;
@@ -1011,6 +1015,9 @@ function handleImageFile(file) {
   reader.onload = (e) => {
     const img = new Image();
     img.onload = () => {
+      // 원본 크기 보존
+      const origW = img.naturalWidth || img.width;
+      const origH = img.naturalHeight || img.height;
       let { width, height } = img;
       if (width > MAX_IMAGE_WIDTH) {
         height = Math.round(height * (MAX_IMAGE_WIDTH / width));
@@ -1025,6 +1032,8 @@ function handleImageFile(file) {
       ctx.drawImage(img, 0, 0, width, height);
       const dataUrl = canvas.toDataURL('image/jpeg', IMAGE_QUALITY);
       currentImageDataUrl = dataUrl;
+      currentImageOriginalWidth = origW;
+      currentImageOriginalHeight = origH;
       currentImageWidth = width;
       currentImageHeight = height;
       document.getElementById('imagePreview').src = dataUrl;
@@ -1050,8 +1059,15 @@ function handleImageFile(file) {
 
 function updateImageInfo() {
   const sizeKb = Math.round(currentImageDataUrl.length * 3 / 4 / 1024);
-  document.getElementById('imageInfo').textContent =
-    currentImageWidth + '×' + currentImageHeight + 'px · ' + sizeKb + 'KB (자동 리사이즈 적용)';
+  const wasResized = currentImageOriginalWidth > currentImageWidth;
+  let info;
+  if (wasResized) {
+    info = '📐 원본 ' + currentImageOriginalWidth + '×' + currentImageOriginalHeight + 'px → ' +
+           '리사이즈 ' + currentImageWidth + '×' + currentImageHeight + 'px  ·  💾 ' + sizeKb + 'KB';
+  } else {
+    info = '📐 ' + currentImageWidth + '×' + currentImageHeight + 'px  ·  💾 ' + sizeKb + 'KB';
+  }
+  document.getElementById('imageInfo').textContent = info;
 }
 
 function clearImage(event) {
@@ -1059,6 +1075,8 @@ function clearImage(event) {
   currentImageDataUrl = '';
   currentImageWidth = 0;
   currentImageHeight = 0;
+  currentImageOriginalWidth = 0;
+  currentImageOriginalHeight = 0;
   document.getElementById('imageFile').value = '';
   document.getElementById('imagePreview').src = '';
   document.getElementById('imagePreviewWrapper').style.display = 'none';
@@ -1387,7 +1405,9 @@ function generate() {
     }
   }
   const html = buildReviewCardHtml(data);
-  document.getElementById('preview').innerHTML = html;
+  // 미리보기는 740px 고정 너비로 렌더링 (다운로드 시점과 동일한 너비 → 동일한 결과)
+  // 복사되는 codeOutput은 그대로 (max-width:740px 반응형 유지하여 CMS 임베드 시 자유롭게)
+  document.getElementById('preview').innerHTML = '<div style="min-width:740px;display:block;">' + html + '</div>';
   document.getElementById('codeOutput').value = html;
   showToast('✅ 리뷰 카드가 생성되었습니다!');
 }
