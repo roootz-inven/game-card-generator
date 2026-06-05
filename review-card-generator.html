@@ -1230,21 +1230,21 @@ function buildReviewCardHtml(data) {
   const prosHtml = prosArr.map((item, idx) => {
     const isLast = idx === prosArr.length - 1;
     const borderStyle = isLast ? '' : 'border-bottom:1px solid #1f1f1f;';
-    return `<span style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;${borderStyle}"><span style="color:#2ecc71;font-size:17px;font-weight:900;width:14px;text-align:center;flex-shrink:0;line-height:1.3;">+</span><span style="color:#fff;font-size:12.5px;font-weight:500;line-height:1.4;">${escapeHtml(item)}</span></span>`;
+    return `<span style="display:flex;align-items:center;gap:8px;padding:4px 0;${borderStyle}"><span style="color:#2ecc71;font-size:15px;font-weight:900;width:14px;text-align:center;flex-shrink:0;line-height:1;">+</span><span style="color:#fff;font-size:12.5px;font-weight:500;line-height:1.3;">${escapeHtml(item)}</span></span>`;
   }).join('');
 
   const consHtml = consArr.map((item, idx) => {
     const isLast = idx === consArr.length - 1;
     const borderStyle = isLast ? '' : 'border-bottom:1px solid #1f1f1f;';
-    return `<span style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;${borderStyle}"><span style="color:#ff3b5c;font-size:19px;font-weight:900;width:14px;text-align:center;flex-shrink:0;line-height:1.3;">−</span><span style="color:#fff;font-size:12.5px;font-weight:500;line-height:1.4;">${escapeHtml(item)}</span></span>`;
+    return `<span style="display:flex;align-items:center;gap:8px;padding:4px 0;${borderStyle}"><span style="color:#ff3b5c;font-size:17px;font-weight:900;width:14px;text-align:center;flex-shrink:0;line-height:1;">−</span><span style="color:#fff;font-size:12.5px;font-weight:500;line-height:1.3;">${escapeHtml(item)}</span></span>`;
   }).join('');
 
   const prosSection = prosArr.length > 0
-    ? `<span style="display:block;margin-bottom:14px;"><span style="display:block;color:#2ecc71;font-size:13px;font-weight:900;letter-spacing:0.5px;margin-bottom:2px;">좋은점</span><span style="display:block;">${prosHtml}</span></span>`
+    ? `<span style="display:block;margin-bottom:10px;"><span style="display:block;color:#2ecc71;font-size:12px;font-weight:900;letter-spacing:0.5px;margin-bottom:3px;">좋은점</span><span style="display:block;">${prosHtml}</span></span>`
     : '';
 
   const consSection = consArr.length > 0
-    ? `<span style="display:block;"><span style="display:block;color:#ff3b5c;font-size:13px;font-weight:900;letter-spacing:0.5px;margin-bottom:2px;">아쉬운점</span><span style="display:block;">${consHtml}</span></span>`
+    ? `<span style="display:block;"><span style="display:block;color:#ff3b5c;font-size:12px;font-weight:900;letter-spacing:0.5px;margin-bottom:3px;">아쉬운점</span><span style="display:block;">${consHtml}</span></span>`
     : '';
 
   // 한글명 + 핵심 요약 문구 헤더
@@ -1325,13 +1325,17 @@ function buildReviewCardHtml(data) {
           <stop offset="100%" stop-color="${extractedColors[extractedColors.length - 1]}"/>
         </linearGradient>
       </defs>
+      <!-- 외각 얇은 헤일로 (stroke 3px, 30% 투명도) -->
+      <circle cx="70" cy="70" r="66" fill="none" stroke="url(#scoreGrad)" stroke-width="3" opacity="0.3"/>
+      <!-- 메인 링: 어두운 트랙 배경 -->
       <circle cx="70" cy="70" r="${radius}" stroke="#1f1f1f" stroke-width="11" fill="none"/>
+      <!-- 메인 링: 그라데이션 진행 아크 -->
       <circle cx="70" cy="70" r="${radius}" stroke="url(#scoreGrad)" stroke-width="11" fill="none"
               stroke-dasharray="${circumference.toFixed(2)}" stroke-dashoffset="${dashoffset.toFixed(2)}"
               stroke-linecap="round"
               transform="rotate(-90 70 70)"/>
-      <text x="70" y="73" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="34" font-weight="900" fill="#ffffff" dominant-baseline="middle">${scoreFmt}</text>
-      <text x="70" y="96" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="8" font-weight="700" fill="#888" letter-spacing="1.5">/ 10</text>
+      <!-- 점수 텍스트 -->
+      <text x="70" y="70" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="42" font-weight="900" fill="#ffffff" dominant-baseline="middle">${scoreFmt}</text>
     </svg>
     <span style="display:block;margin-top:14px;font-size:14px;font-weight:900;letter-spacing:1.5px;color:${sc};line-height:1.25;">${escapeHtml(formatVerdictForCard(verdict)).replace(/\n/g, '<br>')}</span>
   </span>`}
@@ -1538,14 +1542,18 @@ async function downloadImage() {
       await waitForImageLoad(img);
     }
 
-    // html2canvas는 SVG <linearGradient> 참조(stroke="url(#...)")를 잘 처리하지 못함
-    // → 단색으로 치환 (다운로드 PNG에만 적용, 미리보기는 그라데이션 유지)
+    // html2canvas는 SVG <linearGradient> 참조(url(#...))를 잘 처리하지 못함
+    // → stroke와 fill 모두 단색으로 치환 (다운로드 PNG에만 적용, 미리보기는 그라데이션 유지)
     const gradientCircles = cardClone.querySelectorAll('circle');
     const fallbackColor = extractedColors[Math.floor(extractedColors.length / 2)] || extractedColors[0] || '#c0392b';
     gradientCircles.forEach(c => {
       const stroke = c.getAttribute('stroke') || '';
       if (stroke.indexOf('url(') === 0) {
         c.setAttribute('stroke', fallbackColor);
+      }
+      const fill = c.getAttribute('fill') || '';
+      if (fill.indexOf('url(') === 0) {
+        c.setAttribute('fill', fallbackColor);
       }
     });
     // defs 내부 linearGradient는 더 이상 참조되지 않으므로 제거
