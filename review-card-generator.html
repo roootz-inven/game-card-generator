@@ -147,6 +147,148 @@
     border-top: 1px solid #e3e6eb;
   }
 
+  /* 배경 테마 선택 */
+  .bg-theme-toggle {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .bg-theme-btn {
+    flex: none !important;
+    padding: 8px;
+    background: #fff;
+    color: #4b5563;
+    border: 2px solid #d8dce2;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  }
+  .bg-theme-btn:hover {
+    border-color: #4a6cf7;
+    background: #fafbfc;
+  }
+  .bg-theme-btn.active {
+    border-color: #1a1c20;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    background: #fff;
+  }
+  .bg-theme-preview {
+    width: 100%;
+    height: 30px;
+    border-radius: 5px;
+    border: 1px solid rgba(0,0,0,0.08);
+    display: block;
+  }
+  .bg-theme-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #6b7280;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .bg-theme-btn.active .bg-theme-label {
+    color: #1a1c20;
+  }
+
+  /* 동적 정보 항목 */
+  .info-count-hint {
+    font-size: 11px;
+    color: #999;
+    font-weight: 400;
+    margin-left: 4px;
+  }
+  .info-items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .info-item-row {
+    display: grid;
+    grid-template-columns: 48px 1fr 1.4fr 28px;
+    gap: 6px;
+    align-items: center;
+  }
+  .info-item-row input,
+  .info-item-row select {
+    padding: 7px 10px;
+    font-size: 12px;
+    border: 1px solid #d8dce2;
+    border-radius: 6px;
+    background: #fafbfc;
+    width: 100%;
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+  .info-emoji-select {
+    padding: 4px !important;
+    font-size: 18px !important;
+    text-align: center;
+    cursor: pointer;
+    height: 32px;
+  }
+  .info-item-row input:focus {
+    outline: none;
+    border-color: #4a6cf7;
+    background: #fff;
+  }
+  .info-item-row input.info-label-input {
+    font-weight: 700;
+    color: #1a1c20;
+  }
+  .info-remove-btn {
+    flex: none !important;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 6px;
+    background: #fff;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .info-remove-btn:hover {
+    background: #fee2e2;
+  }
+  .btn-add-info {
+    flex: none !important;
+    width: 100%;
+    padding: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    background: #f5f6f8;
+    color: #4b5563;
+    border: 1px dashed #d8dce2;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, border-style 0.15s;
+  }
+  .btn-add-info:hover {
+    background: #eceff3;
+    border-style: solid;
+    color: #1a1c20;
+  }
+  .btn-add-info:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   /* 추출된 색상 패널 */
   .extracted-colors-panel {
     display: flex;
@@ -250,14 +392,14 @@
   .frog-option {
     border: 2px solid #d8dce2;
     border-radius: 8px;
-    padding: 8px 4px 6px;
+    padding: 14px 4px 12px;
     cursor: pointer;
     background: #fafbfc;
     transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 14px;
   }
   .frog-option:hover {
     border-color: #4a6cf7;
@@ -273,9 +415,12 @@
     line-height: 1;
   }
   .frog-option-label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     color: #888;
+    text-align: center;
+    white-space: pre-line;
+    line-height: 1.25;
   }
   .frog-option.selected .frog-option-label {
     color: #1a1c20;
@@ -388,6 +533,25 @@
   <div class="panel">
     <h2>📝 리뷰 정보 입력</h2>
 
+    <!-- 배경 테마 선택 -->
+    <div class="field">
+      <label>🎨 배경 테마</label>
+      <div class="bg-theme-toggle">
+        <button type="button" class="bg-theme-btn active" data-theme="petrol" onclick="setBgTheme('petrol')">
+          <span class="bg-theme-preview" style="background:linear-gradient(135deg,#02343F 0%,#02343F 60%,#F0EDCC 100%)"></span>
+          <span class="bg-theme-label">Petrol & Cream</span>
+        </button>
+        <button type="button" class="bg-theme-btn" data-theme="plum" onclick="setBgTheme('plum')">
+          <span class="bg-theme-preview" style="background:linear-gradient(135deg,#2c1144 0%,#2c1144 60%,#d4af37 100%)"></span>
+          <span class="bg-theme-label">Plum & Gold</span>
+        </button>
+        <button type="button" class="bg-theme-btn" data-theme="carbon" onclick="setBgTheme('carbon')">
+          <span class="bg-theme-preview" style="background:linear-gradient(135deg,#0d1117 0%,#0d1117 60%,#5eead4 100%)"></span>
+          <span class="bg-theme-label">Carbon & Mint</span>
+        </button>
+      </div>
+    </div>
+
     <!-- 이미지 업로드 -->
     <div class="field">
       <label>📷 제품 이미지</label>
@@ -461,24 +625,9 @@
     </div>
 
     <div class="field">
-      <label>🏷️ 제품명 / 모델명</label>
-      <input type="text" id="modelName" placeholder="예: PRAGMATA Standard Edition">
-    </div>
-
-    <div class="field">
-      <label>🏢 제조사 / 브랜드</label>
-      <input type="text" id="manufacturer" placeholder="예: CAPCOM">
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label>📅 출시일</label>
-        <input type="text" id="releasedOn" placeholder="예: 2026년 4월 17일">
-      </div>
-      <div class="field">
-        <label>💰 가격</label>
-        <input type="text" id="price" placeholder="예: 79,800원">
-      </div>
+      <label>🎯 정보 항목 <span class="info-count-hint">(<span id="infoCount">4</span>/8 · 라벨도 자유롭게 편집 가능)</span></label>
+      <div class="info-items" id="infoItems"></div>
+      <button type="button" class="btn-add-info" id="btnAddInfo" onclick="addInfoItem()">+ 항목 추가</button>
     </div>
 
     <div class="actions">
@@ -510,21 +659,35 @@
 /* ============================================================
    상수 / 상태
    ============================================================ */
-const FIELD_IDS = ['titleKr','tagline','category','score','scoreLabel','pros','cons','modelName','manufacturer','releasedOn','price'];
+const FIELD_IDS = ['titleKr','tagline','category','score','scoreLabel','pros','cons'];
 
 const SAMPLE = {
   titleKr: '엑스지미 호라이즌 20 MAX',
   tagline: '현존하는 최강 빔프로젝트',
   category: '홈시네마',
   score: '9.0',
-  scoreLabel: 'AMAZING',
+  scoreLabel: 'Truly Amazing',
   pros: '압도적인 4K 화질\n뛰어난 명암비\n조용한 팬 소음\n간편한 자동 키스톤 보정',
-  cons: '부담스러운 가격',
-  modelName: 'iPhone / iPhone 17 Pro',
-  manufacturer: 'Apple',
-  releasedOn: '2026년 00월 00일',
-  price: '4,500,000원'
+  cons: '부담스러운 가격'
 };
+
+// 동적 정보 항목 (최대 8개, 디폴트 4개)
+const MAX_INFO_ITEMS = 8;
+// 선택 가능한 이모지 10종
+const INFO_EMOJIS = ['📦', '🏢', '📅', '💰', '🏷️', '🎮', '🎬', '📱', '🌐', '⭐'];
+const DEFAULT_INFO_ITEMS = [
+  { emoji: '📦', label: '제품명 / 모델명', value: '' },
+  { emoji: '🏢', label: '제조사 / 브랜드', value: '' },
+  { emoji: '📅', label: '출시일',          value: '' },
+  { emoji: '💰', label: '가격',            value: '' }
+];
+const SAMPLE_INFO_ITEMS = [
+  { emoji: '📦', label: '제품명 / 모델명', value: 'iPhone / iPhone 17 Pro' },
+  { emoji: '🏢', label: '제조사 / 브랜드', value: 'Apple' },
+  { emoji: '📅', label: '출시일',          value: '2026년 00월 00일' },
+  { emoji: '💰', label: '가격',            value: '4,500,000원' }
+];
+let infoItems = DEFAULT_INFO_ITEMS.map(o => ({ emoji: o.emoji, label: o.label, value: o.value }));
 
 let currentImageDataUrl = '';
 let currentImageWidth = 0;
@@ -537,8 +700,157 @@ const TARGET_WIDTH = 740;
 // 이미지에서 추출한 색상 (그라데이션 보더용) - 기본값은 따뜻한 톤
 let extractedColors = ['#c0392b', '#d4682b', '#e67e22'];
 
+// 배경 테마 (3종)
+const BG_THEMES = [
+  {
+    id: 'petrol',
+    label: 'Petrol & Cream',
+    main: '#02343F',
+    mainDark: '#021e25',
+    accent: '#F0EDCC',
+    accentRgba: '240,237,204'
+  },
+  {
+    id: 'plum',
+    label: 'Plum & Gold',
+    main: '#2c1144',
+    mainDark: '#1a0a2e',
+    accent: '#d4af37',
+    accentRgba: '212,175,55'
+  },
+  {
+    id: 'carbon',
+    label: 'Carbon & Mint',
+    main: '#0d1117',
+    mainDark: '#05080d',
+    accent: '#5eead4',
+    accentRgba: '94,234,212'
+  }
+];
+let currentBgTheme = 'petrol';
+
+function getBgTheme() {
+  return BG_THEMES.find(t => t.id === currentBgTheme) || BG_THEMES[0];
+}
+
+function setBgTheme(themeId) {
+  currentBgTheme = themeId;
+  document.querySelectorAll('.bg-theme-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === themeId);
+  });
+  if (document.getElementById('codeOutput').value) generate();
+}
+
 function rgbToHex(r, g, b) {
   return '#' + [r, g, b].map(x => Math.max(0, Math.min(255, x)).toString(16).padStart(2, '0')).join('');
+}
+
+// 색상을 검정과 섞어서 어둡게 만들기 (ratio=0.85: 85% 검정 + 15% 원본)
+function mixWithBlack(hex, blackRatio) {
+  blackRatio = blackRatio == null ? 0.85 : blackRatio;
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  const factor = 1 - blackRatio;
+  return rgbToHex(Math.round(r * factor), Math.round(g * factor), Math.round(b * factor));
+}
+
+/* ============================================================
+   동적 정보 항목 (라벨/값 자유 편집, 최대 8개)
+   ============================================================ */
+function renderInfoItems() {
+  const container = document.getElementById('infoItems');
+  if (!container) return;
+  container.innerHTML = '';
+  infoItems.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.className = 'info-item-row';
+
+    // 이모지 셀렉트 (10종 중 선택)
+    const emojiSel = document.createElement('select');
+    emojiSel.className = 'info-emoji-select';
+    emojiSel.title = '이모지 선택';
+    // 사용자가 기본 10개에 없는 이모지를 가지고 있으면 첫 옵션으로 추가
+    if (item.emoji && !INFO_EMOJIS.includes(item.emoji)) {
+      const customOpt = document.createElement('option');
+      customOpt.value = item.emoji;
+      customOpt.textContent = item.emoji;
+      emojiSel.appendChild(customOpt);
+    }
+    INFO_EMOJIS.forEach(e => {
+      const opt = document.createElement('option');
+      opt.value = e;
+      opt.textContent = e;
+      emojiSel.appendChild(opt);
+    });
+    emojiSel.value = item.emoji || INFO_EMOJIS[0];
+    emojiSel.addEventListener('change', (e) => {
+      infoItems[idx].emoji = e.target.value;
+      if (document.getElementById('codeOutput').value) generate();
+    });
+
+    const labelInp = document.createElement('input');
+    labelInp.type = 'text';
+    labelInp.className = 'info-label-input';
+    labelInp.placeholder = '라벨 (예: 제목, 배급사)';
+    labelInp.value = item.label;
+    labelInp.addEventListener('input', (e) => {
+      infoItems[idx].label = e.target.value;
+      if (document.getElementById('codeOutput').value) generate();
+    });
+
+    const valueInp = document.createElement('input');
+    valueInp.type = 'text';
+    valueInp.placeholder = '값';
+    valueInp.value = item.value;
+    valueInp.addEventListener('input', (e) => {
+      infoItems[idx].value = e.target.value;
+      if (document.getElementById('codeOutput').value) generate();
+    });
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'info-remove-btn';
+    removeBtn.title = '항목 삭제';
+    removeBtn.textContent = '×';
+    removeBtn.addEventListener('click', () => removeInfoItem(idx));
+
+    row.appendChild(emojiSel);
+    row.appendChild(labelInp);
+    row.appendChild(valueInp);
+    row.appendChild(removeBtn);
+    container.appendChild(row);
+  });
+
+  updateInfoCount();
+}
+
+function addInfoItem() {
+  if (infoItems.length >= MAX_INFO_ITEMS) {
+    showToast('최대 ' + MAX_INFO_ITEMS + '개까지 추가 가능합니다');
+    return;
+  }
+  // 새 항목엔 디폴트 이모지(첫 번째) 자동 부여
+  infoItems.push({ emoji: INFO_EMOJIS[0], label: '', value: '' });
+  renderInfoItems();
+}
+
+function removeInfoItem(idx) {
+  if (infoItems.length <= 1) {
+    showToast('최소 1개 항목은 유지해야 합니다');
+    return;
+  }
+  infoItems.splice(idx, 1);
+  renderInfoItems();
+  if (document.getElementById('codeOutput').value) generate();
+}
+
+function updateInfoCount() {
+  const countEl = document.getElementById('infoCount');
+  if (countEl) countEl.textContent = infoItems.length;
+  const btn = document.getElementById('btnAddInfo');
+  if (btn) btn.disabled = infoItems.length >= MAX_INFO_ITEMS;
 }
 
 // 추출된 색상 스와치 UI 렌더링
@@ -672,11 +984,11 @@ let scoreMode = 'number';   // 'number' | 'frog'
 let selectedFrog = null;    // 'best' | 'good' | 'meh' | 'bad' | 'worst'
 
 const FROG_LEVELS = [
-  { id: 'best',  label: 'BEST',  color: '#2ecc71', emoji: '🤩' },
-  { id: 'good',  label: 'GOOD',  color: '#a4d65e', emoji: '😊' },
-  { id: 'meh',   label: 'OKAY',  color: '#f1c40f', emoji: '😐' },
-  { id: 'bad',   label: 'BAD',   color: '#f39c12', emoji: '😞' },
-  { id: 'worst', label: 'WORST', color: '#e74c3c', emoji: '😭' }
+  { id: 'best',  label: 'Truly\nAmazing',      color: '#2ecc71', emoji: '🥳' },
+  { id: 'good',  label: 'Highly\nRecommended', color: '#a4d65e', emoji: '🤩' },
+  { id: 'meh',   label: 'Good\nExperience',    color: '#f1c40f', emoji: '😊' },
+  { id: 'bad',   label: 'Mixed Bag',           color: '#f39c12', emoji: '🤔' },
+  { id: 'worst', label: 'Poor\nExecution',     color: '#e74c3c', emoji: '😞' }
 ];
 
 function frogSvg(levelId, size) {
@@ -794,17 +1106,34 @@ function setupImageUpload() {
 /* ============================================================
    점수 → 라벨/색상 매핑
    ============================================================ */
-const AUTO_LABELS = ['AMAZING', 'GREAT', 'GOOD', 'OKAY', 'MIXED', 'BAD', 'AWFUL'];
+// 자동 갱신 가능한 라벨 (개구리 점수의 영문 라벨과 통일)
+const AUTO_LABELS = [
+  'TRULY AMAZING', 'HIGHLY RECOMMENDED', 'GOOD EXPERIENCE', 'MIXED BAG', 'POOR EXECUTION',
+  // 이전 라벨도 호환 (캐시된 상태에서 자동 마이그레이션)
+  'AMAZING', 'GREAT', 'GOOD', 'OKAY', 'MIXED', 'BAD', 'AWFUL'
+];
 
 function suggestScoreLabel(score) {
   if (isNaN(score)) return '';
-  if (score >= 9.0) return 'AMAZING';
-  if (score >= 8.0) return 'GREAT';
-  if (score >= 7.0) return 'GOOD';
-  if (score >= 6.0) return 'OKAY';
-  if (score >= 5.0) return 'MIXED';
-  if (score >= 3.0) return 'BAD';
-  return 'AWFUL';
+  if (score >= 9.0) return 'Truly Amazing';
+  if (score >= 7.0) return 'Highly Recommended';
+  if (score >= 5.0) return 'Good Experience';
+  if (score >= 3.0) return 'Mixed Bag';
+  return 'Poor Execution';
+}
+
+// 카드 출력 시 줄바꿈 표시 (개구리 라벨과 동일한 모양)
+const VERDICT_DISPLAY_MAP = {
+  'TRULY AMAZING':       'Truly\nAmazing',
+  'HIGHLY RECOMMENDED':  'Highly\nRecommended',
+  'GOOD EXPERIENCE':     'Good\nExperience',
+  'MIXED BAG':           'Mixed Bag',
+  'POOR EXECUTION':      'Poor\nExecution'
+};
+function formatVerdictForCard(text) {
+  if (!text) return '';
+  const key = text.trim().toUpperCase();
+  return VERDICT_DISPLAY_MAP[key] || text;
 }
 
 function scoreColor(score) {
@@ -934,19 +1263,28 @@ function buildReviewCardHtml(data) {
     ? `<span style="text-align:right;flex-shrink:0;"><span style="display:block;color:#888;font-size:9px;letter-spacing:2.5px;font-weight:700;margin-bottom:5px;">CATEGORY</span><span style="display:block;font-size:13px;font-weight:900;letter-spacing:1px;color:#fff;">${escapeHtml(data.category)}</span></span>`
     : '';
 
-  // 하단 정보 4셀 (이모지 포함)
-  const infoRows = [
-    { label: '📦 제품명 / 모델명',  value: escapeHtml(data.modelName) || '-'    },
-    { label: '🏢 제조사 / 브랜드',  value: escapeHtml(data.manufacturer) || '-' },
-    { label: '📅 출시일',           value: escapeHtml(data.releasedOn) || '-'   },
-    { label: '💰 가격',             value: escapeHtml(data.price) || '-'        }
-  ];
+  // 선택된 배경 테마 사용 (3종 중 1개) - infoCells에서 사용하므로 먼저 선언
+  const theme = getBgTheme();
+  const bgGradient = `radial-gradient(ellipse 70% 60% at 100% 0%, rgba(${theme.accentRgba},0.18) 0%, transparent 55%), linear-gradient(135deg, ${theme.main} 0%, ${theme.mainDark} 100%)`;
+  const bdrColor = `rgba(${theme.accentRgba},0.15)`;
 
-  const infoCells = infoRows.map(r =>
-    `<span style="display:flex;flex-direction:column;gap:5px;padding:13px 16px;border-top:1.5px dotted rgba(255,255,255,0.18);background:transparent;"><span style="font-size:10px;color:#888;font-weight:700;letter-spacing:1.5px;">${r.label}</span><span style="font-size:13px;color:#fff;font-weight:700;line-height:1.4;">${r.value}</span></span>`
-  ).join('');
+  // 하단 정보 - 사용자가 동적으로 편집한 infoItems 사용 (emoji + label, 사이에 6px 간격)
+  const infoCells = infoItems.map(item => {
+    let labelDisplay;
+    if (item.emoji && item.label) {
+      labelDisplay = `<span style="margin-right:7px;display:inline-block;">${escapeHtml(item.emoji)}</span>${escapeHtml(item.label)}`;
+    } else if (item.emoji) {
+      labelDisplay = escapeHtml(item.emoji);
+    } else if (item.label) {
+      labelDisplay = escapeHtml(item.label);
+    } else {
+      labelDisplay = '-';
+    }
+    const valueDisplay = escapeHtml(item.value) || '-';
+    return `<span style="display:flex;flex-direction:column;gap:5px;padding:13px 16px;border-top:1.5px dotted rgba(${theme.accentRgba},0.28);background:transparent;"><span style="font-size:10px;color:rgba(${theme.accentRgba},0.65);font-weight:700;letter-spacing:1.5px;">${labelDisplay}</span><span style="font-size:13px;color:#fff;font-weight:700;line-height:1.4;">${valueDisplay}</span></span>`;
+  }).join('');
 
-  return `<span style="display:block;max-width:740px;margin:20px auto;font-family:'Pretendard','Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:linear-gradient(135deg, #0e1a2e 0%, #0a0e1a 50%, #0a1422 100%);color:#ffffff;border-radius:12px;overflow:hidden;line-height:1;box-sizing:border-box;border:1px solid #1f2937;">
+  return `<span style="display:block;max-width:740px;margin:20px auto;font-family:'Pretendard','Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:${bgGradient};color:#ffffff;border-radius:12px;overflow:hidden;line-height:1;box-sizing:border-box;border:1px solid ${bdrColor};">
 
 <!-- 상단 헤더: 한글명 + 핵심 요약 문구 + CATEGORY -->
 <span style="display:flex;justify-content:space-between;align-items:flex-start;padding:22px 26px 18px 26px;gap:14px;">
@@ -973,9 +1311,10 @@ function buildReviewCardHtml(data) {
   <!-- 점수 (숫자 또는 개구리) -->
   ${data.scoreMode === 'frog' && data.selectedFrog ? (() => {
     const frog = FROG_LEVELS.find(f => f.id === data.selectedFrog);
+    const frogLabelHtml = escapeHtml(frog.label).replace(/\n/g, '<br>');
     return `<span style="flex:0 0 140px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;">
       ${frogSvg(data.selectedFrog, 130)}
-      <span style="display:block;margin-top:10px;font-size:16px;font-weight:900;letter-spacing:3px;color:${frog.color};">${frog.label}</span>
+      <span style="display:block;margin-top:14px;font-size:15px;font-weight:900;letter-spacing:1.5px;color:${frog.color};line-height:1.25;">${frogLabelHtml}</span>
     </span>`;
   })() : `<span style="flex:0 0 140px;text-align:center;display:flex;flex-direction:column;align-items:center;">
     <svg width="140" height="140" viewBox="0 0 140 140" style="display:block;">
@@ -994,7 +1333,7 @@ function buildReviewCardHtml(data) {
       <text x="70" y="73" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="34" font-weight="900" fill="#ffffff" dominant-baseline="middle">${scoreFmt}</text>
       <text x="70" y="96" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="8" font-weight="700" fill="#888" letter-spacing="1.5">/ 10</text>
     </svg>
-    <span style="display:block;margin-top:8px;font-size:14px;font-weight:900;letter-spacing:2.5px;color:${sc};">${escapeHtml(verdict)}</span>
+    <span style="display:block;margin-top:14px;font-size:14px;font-weight:900;letter-spacing:1.5px;color:${sc};line-height:1.25;">${escapeHtml(formatVerdictForCard(verdict)).replace(/\n/g, '<br>')}</span>
   </span>`}
 
 </span>
@@ -1093,6 +1432,9 @@ function resetForm() {
   // 점수 기본값 9 복원
   document.getElementById('score').value = '9';
   onScoreChange();
+  // 정보 항목 기본값으로 복원
+  infoItems = DEFAULT_INFO_ITEMS.map(o => ({ emoji: o.emoji, label: o.label, value: o.value }));
+  renderInfoItems();
   document.getElementById('preview').innerHTML = '<p style="color:#999;font-size:13px;text-align:center;margin:80px 0;">좌측에 정보를 입력한 후 "코드 생성"을 눌러주세요.</p>';
   document.getElementById('codeOutput').value = '';
   showToast('초기화되었습니다.');
@@ -1104,6 +1446,9 @@ function loadSample() {
       document.getElementById(id).value = SAMPLE[id];
     }
   });
+  // 정보 항목도 예시 데이터로
+  infoItems = SAMPLE_INFO_ITEMS.map(o => ({ emoji: o.emoji, label: o.label, value: o.value }));
+  renderInfoItems();
   showToast('✅ 예시가 채워졌습니다');
   if (currentImageDataUrl) generate();
 }
@@ -1267,6 +1612,9 @@ renderFrogOptions();
 
 // 추출된 색상 스와치 초기 렌더링 (기본값 표시)
 renderExtractedColors();
+
+// 동적 정보 항목 초기 렌더링 (4개 디폴트)
+renderInfoItems();
 
 // 점수 기본값 9 설정 + 자동 라벨 채우기
 document.getElementById('score').value = '9';
